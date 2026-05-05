@@ -6,22 +6,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
-    // Public auth routes
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login', [AuthController::class, 'login']);
+    // Auth routes
+    Route::post('/auth/register', [AuthController::class, 'register']);
+    Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+    Route::get('/auth/me', [AuthController::class, 'user'])->middleware('auth:sanctum');
 
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::get('/me', function (Request $request) {
-            return $request->user();
-        });
-        Route::post('/logout', [AuthController::class, 'logout']);
-
-        // Users CRUD
-        Route::get('/users', [UserController::class, 'index']);
-        Route::post('/users', [UserController::class, 'store']);
-        Route::get('/users/{id}', [UserController::class, 'show']);
-        Route::put('/users/{id}', [UserController::class, 'update']);
-        Route::patch('/users/{id}', [UserController::class, 'update']);
-        Route::delete('/users/{id}', [UserController::class, 'destroy']);
-    });
+    // User profile endpoint
+    Route::get('/users/{user_id}', [UserController::class, 'show'])->middleware('auth:sanctum');
 });
