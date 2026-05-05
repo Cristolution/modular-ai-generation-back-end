@@ -1,58 +1,143 @@
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## About MGF Backend
 
-## About Laravel
+MGF (Modular Generation Framework) is a web-based SaaS platform that solves a fundamental problem with AI-generated visual content: AI models hallucinate layouts, miss components, and produce outputs that are hard to edit or reuse. MGF introduces a **modular generation framework** where content, layouts with simple components, and theme are separated into distinct, independently callable files — making AI generation reliable, predictable, and composable.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+This repository contains the **Laravel backend API** only. The frontend is a separate React application.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Tech Stack
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+* **Framework**: Laravel 13 (PHP 8.3+)
+  
+* **Authentication**: Laravel Sanctum
+  
+* **Testing**: Pest PHP
+  
+* **Database**: MySQL
+  
 
-## Learning Laravel
+## Setup
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Prerequisites
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+* PHP 8.3+
+  
+* Composer
+  
+* MySQL 8.0+
+  
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+### Installation
 
-## Agentic Development
+    
+    # 1. Clone the repository
+    
+    git clone <repository-url>
+    
+    cd 01_MGF_BACKEND
+    
+    
+    
+    # 2. Install PHP dependencies
+    
+    composer install
+    
+    
+    
+    # 3. Copy environment file and generate keys
+    
+    cp .env.example .env
+    
+    php artisan key:generate
+    
+    
+    
+    # 4. Configure your database in .env (MySQL or SQLite)
+    
+    # For SQLite:DB_CONNECTION=sqlite
+    
+    # For MySQL: Update DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD
+    
+    
+    
+    # 5. Run migrations
+    
+    php artisan migrate
+    
+    
+    
+    # 6. (Optional) Seed demo data
+    
+    php artisan db:seed
+    
+    
+    # 7. Start the server
+    
+    php artisan serve
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+### Using the Setup Script
 
-```bash
-composer require laravel/boost --dev
+    
+    composer setup
+    
 
-php artisan boost:install
-```
+This will install dependencies, generate keys, run migrations, install npm packages, and build assets.
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+### Development
 
-## Contributing
+    
+    composer dev
+    
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Runs concurrently: PHP server, queue worker, log watcher, and Vite dev server.
 
-## Code of Conduct
+### Running Tests
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+    
+    composer test
+    
 
-## Security Vulnerabilities
+## Current API Endpoints
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+| Method | URI | Description |
+
+|--------|-----|-------------|
+
+| POST | `/api/register` | Register new user |
+
+| POST | `/api/login` | User login |
+
+| POST | `/api/logout` | User logout |
+
+| GET | `/api/user` | Get authenticated user |
+
+| PUT | `/api/user` | Update user profile |
+
+| GET | `/api/users/{id}` | Get user by ID |
+
+| GET | `/api/users` | List users (paginated) |
+
+## Output Types (Planned)
+
+| Type | Description |
+
+|------|-------------|
+
+| Presentation | Multi-slide deck |
+
+| Social Carousel | Swipeable cards for Instagram/LinkedIn |
+
+| Poster | Single-page visual |
+
+| Infographic | Data-driven visual storytelling |
+
+| Document | Structured text-heavy document |
+
+| Website | Single-page web output |
+
+**Key principle:** AI can regenerate any single layer without touching the others.
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+MIT
