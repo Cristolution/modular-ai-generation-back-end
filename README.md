@@ -33,9 +33,9 @@ This repository contains the **Laravel backend API** only. The frontend is a sep
     
     # 1. Clone the repository
     
-    git clone <repository-url>
+    git clone https://github.com/Cristography/modular-ai-generation-back-end
     
-    cd 01_MGF_BACKEND
+    cd modular-ai-generation-back-end
     
     
     
