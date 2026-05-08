@@ -28,7 +28,7 @@ class UserTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'data' => [
-                    '*' => ['id', 'name', 'email', 'role', 'created_at', 'updated_at'],
+                    '*' => ['id', 'name', 'email', 'role', 'created_at'],
                 ],
             ]);
     }

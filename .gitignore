@@ -33,4 +33,5 @@ composer.phar
 /.vagrant
 
 .claude/
-openapi_api_contract.yaml
+00_docs/
+CLUADE.md

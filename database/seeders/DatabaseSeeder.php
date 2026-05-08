@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Type;
 use App\Models\User;
 use App\Models\UserProfile;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -14,6 +15,10 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
+        $this->call([
+            TypeSeeder::class,
+        ]);
+
         $user = User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
