@@ -2,12 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Type;
-use App\Models\User;
-use App\Models\UserProfile;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -17,24 +13,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             TypeSeeder::class,
+            UserSeeder::class,
         ]);
-
-        $user = User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password_hash' => Hash::make('password'),
-        ]);
-
-        UserProfile::factory()->create([
-            'user_id' => $user->id,
-            'bio' => 'This is a test user profile.',
-            'location' => 'Test City, Country',
-        ]);
-
-        User::factory(10)->create()->each(function ($user) {
-            UserProfile::factory()->create([
-                'user_id' => $user->id,
-            ]);
-        });
     }
 }

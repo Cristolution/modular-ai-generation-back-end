@@ -3,11 +3,10 @@
 namespace Database\Seeders;
 
 use App\Models\Type;
-use Illuminate\Database\Seeder;
 
-class TypeSeeder extends Seeder
+class TypeSeeder extends BaseSeeder
 {
-    public function run(): void
+    protected function seed(): void
     {
         $types = [
             ['name' => 'presentation', 'description' => 'Multi-slide deck like PowerPoint/Google Slides', 'icon' => 'slides'],
