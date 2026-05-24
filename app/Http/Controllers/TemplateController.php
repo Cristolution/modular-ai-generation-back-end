@@ -9,6 +9,7 @@ use App\Http\Requests\UpdateFileRequest;
 use App\Http\Requests\UpdateTemplateRequest;
 use App\Http\Resources\FileResource;
 use App\Http\Resources\TemplateResource;
+use App\Models\Comment;
 use App\Models\File;
 use App\Models\Project;
 use App\Models\Template;
@@ -249,5 +250,40 @@ class TemplateController extends Controller
         }
 
         return response()->json(['bookmarked' => $bookmarked]);
+    }
+
+    public function comments(Request $request, string $templateId): AnonymousResourceCollection
+    {
+        $template = Template::findOrFail($templateId);
+
+        $comments = $template->comments()
+            ->with(['user'])
+            ->whereNull('parent_id')
+            ->orderBy('created_at', 'desc')
+            ->paginate($request->get('per_page', 20));
+
+        return \App\Http\Resources\CommentResource::collection($comments);
+    }
+
+    public function storeComment(Request $request, string $templateId): JsonResponse
+    {
+        $template = Template::findOrFail($templateId);
+
+        $validated = $request->validate([
+            'body' => 'required|string|min:1',
+            'parent_id' => 'nullable|uuid|exists:comments,id',
+        ]);
+
+        $comment = Comment::create([
+            'user_id' => $request->user()->id,
+            'target_id' => $templateId,
+            'target_type' => 'template',
+            'parent_id' => $validated['parent_id'] ?? null,
+            'body' => $validated['body'],
+        ]);
+
+        return (new \App\Http\Resources\CommentResource($comment->load(['user'])))
+            ->response()
+            ->setStatusCode(201);
     }
 }

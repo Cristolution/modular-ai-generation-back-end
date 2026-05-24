@@ -10,30 +10,29 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Template extends Model
+class Resource extends Model
 {
     use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
         'user_id',
-        'type_id',
+        'forked_from_id',
+        'kind',
         'name',
         'description',
-        'thumbnail_url',
+        'content',
+        'placeholders',
         'visibility',
         'tags',
-        'locale',
-        'direction',
-        'fork_count',
-        'upvote_count',
     ];
 
     protected function casts(): array
     {
         return [
+            'placeholders' => 'array',
             'tags' => 'array',
-            'fork_count' => 'integer',
-            'upvote_count' => 'integer',
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
         ];
     }
 
@@ -42,14 +41,14 @@ class Template extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function type(): BelongsTo
+    public function forkedFrom(): BelongsTo
     {
-        return $this->belongsTo(Type::class);
+        return $this->belongsTo(Resource::class, 'forked_from_id');
     }
 
-    public function files(): HasMany
+    public function forks(): HasMany
     {
-        return $this->hasMany(File::class);
+        return $this->hasMany(Resource::class, 'forked_from_id');
     }
 
     public function upvotes(): MorphMany

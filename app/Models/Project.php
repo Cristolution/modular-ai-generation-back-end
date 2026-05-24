@@ -55,4 +55,9 @@ class Project extends Model
     {
         return $this->hasMany(File::class);
     }
+
+    public function aiJobs(): HasMany
+    {
+        return $this->hasMany(AiJob::class);
+    }
 }

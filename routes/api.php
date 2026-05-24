@@ -1,7 +1,11 @@
 <?php
 
+use App\Http\Controllers\AiJobController;
+use App\Http\Controllers\AiProviderController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CommentController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\TypeController;
 use App\Http\Controllers\UserController;
@@ -13,6 +17,16 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/login', [AuthController::class, 'login']);
     Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
     Route::get('/auth/me', [AuthController::class, 'user'])->middleware('auth:sanctum');
+
+    // AI Providers (protected)
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/me/ai-providers', [AiProviderController::class, 'index']);
+        Route::post('/me/ai-providers', [AiProviderController::class, 'store']);
+        Route::get('/me/ai-providers/{provider_id}', [AiProviderController::class, 'show']);
+        Route::put('/me/ai-providers/{provider_id}', [AiProviderController::class, 'update']);
+        Route::delete('/me/ai-providers/{provider_id}', [AiProviderController::class, 'destroy']);
+        Route::post('/me/ai-providers/{provider_id}/test', [AiProviderController::class, 'test']);
+    });
 
     // Types (public)
     Route::get('/types', [TypeController::class, 'index']);
@@ -33,7 +47,11 @@ Route::prefix('v1')->group(function () {
         Route::delete('/templates/{template_id}/files/{file_id}', [TemplateController::class, 'destroyFile']);
         Route::post('/templates/{template_id}/upvote', [TemplateController::class, 'upvote']);
         Route::post('/templates/{template_id}/bookmark', [TemplateController::class, 'bookmark']);
+        Route::post('/templates/{template_id}/comments', [TemplateController::class, 'storeComment']);
     });
+
+    // Template comments (public read)
+    Route::get('/templates/{template_id}/comments', [TemplateController::class, 'comments']);
 
     // Projects (protected)
     Route::middleware('auth:sanctum')->group(function () {
@@ -48,6 +66,14 @@ Route::prefix('v1')->group(function () {
         Route::put('/projects/{project_id}/files/{file_id}', [ProjectController::class, 'updateFile']);
         Route::delete('/projects/{project_id}/files/{file_id}', [ProjectController::class, 'destroyFile']);
         Route::patch('/projects/{project_id}/files/reorder', [ProjectController::class, 'reorderFiles']);
+        Route::get('/projects/{project_id}/jobs', [AiJobController::class, 'index']);
+        Route::post('/projects/{project_id}/generate', [AiJobController::class, 'generateFull']);
+        Route::post('/projects/{project_id}/files/{file_id}/generate', [AiJobController::class, 'generateLayer']);
+    });
+
+    // Jobs poll (protected)
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/jobs/{job_id}', [AiJobController::class, 'show']);
     });
 
     // Users (protected)
@@ -57,5 +83,27 @@ Route::prefix('v1')->group(function () {
         Route::get('/users/{user_id}', [UserController::class, 'show']);
         Route::put('/users/{user_id}', [UserController::class, 'update']);
         Route::delete('/users/{user_id}', [UserController::class, 'destroy']);
+    });
+
+    // Resources (public browse, auth write)
+    Route::get('/resources', [ResourceController::class, 'index']);
+    Route::get('/resources/{resource_id}', [ResourceController::class, 'show']);
+    Route::get('/resources/{resource_id}/forks', [ResourceController::class, 'forks']);
+    Route::get('/resources/{resource_id}/comments', [ResourceController::class, 'comments']);
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/resources', [ResourceController::class, 'store']);
+        Route::put('/resources/{resource_id}', [ResourceController::class, 'update']);
+        Route::delete('/resources/{resource_id}', [ResourceController::class, 'destroy']);
+        Route::post('/resources/{resource_id}/fork', [ResourceController::class, 'fork']);
+        Route::post('/resources/{resource_id}/upvote', [ResourceController::class, 'upvote']);
+        Route::post('/resources/{resource_id}/bookmark', [ResourceController::class, 'bookmark']);
+        Route::post('/resources/{resource_id}/comments', [ResourceController::class, 'storeComment']);
+    });
+
+    // Comments (protected)
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::put('/comments/{comment_id}', [CommentController::class, 'update']);
+        Route::delete('/comments/{comment_id}', [CommentController::class, 'destroy']);
     });
 });
