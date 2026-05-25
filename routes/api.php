@@ -4,6 +4,7 @@ use App\Http\Controllers\AiJobController;
 use App\Http\Controllers\AiProviderController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\ExportController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\TemplateController;
@@ -75,6 +76,14 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/jobs/{job_id}', [AiJobController::class, 'show']);
     });
+
+    // Export (protected)
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/projects/{project_id}/export', [ExportController::class, 'store']);
+    });
+
+    // Export jobs (public poll)
+    Route::get('/export-jobs/{job_id}', [ExportController::class, 'show']);
 
     // Users (protected)
     Route::middleware('auth:sanctum')->group(function () {
