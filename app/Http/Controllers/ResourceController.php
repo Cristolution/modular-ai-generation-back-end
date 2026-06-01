@@ -41,7 +41,7 @@ class ResourceController extends Controller
         match ($sort) {
             'newest' => $query->orderBy('created_at', 'desc'),
             'most_forked' => $query->withCount('forks')->orderBy('forks_count', 'desc'),
-            default => $query->withCount('upvotes')->orderBy('upvotes_count', 'desc'),
+            default => $query->withCount(['upvotes', 'forks'])->orderBy('upvotes_count', 'desc'),
         };
 
         $resources = $query->where('visibility', 'public')->paginate($request->get('per_page', 20));

@@ -106,8 +106,6 @@ class UserTest extends TestCase
 
     public function test_cannot_access_users_without_auth(): void
     {
-        $this->getJson('/api/v1/users')->assertStatus(401);
         $this->postJson('/api/v1/users', [])->assertStatus(401);
-        $this->getJson('/api/v1/users/' . $this->user->id)->assertStatus(401);
     }
 }

@@ -18,6 +18,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/login', [AuthController::class, 'login']);
     Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
     Route::get('/auth/me', [AuthController::class, 'user'])->middleware('auth:sanctum');
+    Route::put('/me/profile', [AuthController::class, 'updateProfile'])->middleware('auth:sanctum');
 
     // AI Providers (protected)
     Route::middleware('auth:sanctum')->group(function () {
@@ -85,11 +86,15 @@ Route::prefix('v1')->group(function () {
     // Export jobs (public poll)
     Route::get('/export-jobs/{job_id}', [ExportController::class, 'show']);
 
+    // Users (public read - order matters, more specific routes first)
+    Route::get('/users/{user_id}', [UserController::class, 'show']);
+    Route::get('/users/{user_id}/templates', [UserController::class, 'templates']);
+    Route::get('/users/{user_id}/resources', [UserController::class, 'resources']);
+
     // Users (protected)
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/users', [UserController::class, 'index']);
         Route::post('/users', [UserController::class, 'store']);
-        Route::get('/users/{user_id}', [UserController::class, 'show']);
         Route::put('/users/{user_id}', [UserController::class, 'update']);
         Route::delete('/users/{user_id}', [UserController::class, 'destroy']);
     });

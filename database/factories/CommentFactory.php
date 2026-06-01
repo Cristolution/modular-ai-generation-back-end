@@ -29,7 +29,7 @@ class CommentFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'target_id' => $template->id,
-            'target_type' => Template::class,
+            'target_type' => 'template',
         ]);
     }
 
@@ -37,7 +37,7 @@ class CommentFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'target_id' => $resource->id,
-            'target_type' => Resource::class,
+            'target_type' => 'resource',
         ]);
     }
 

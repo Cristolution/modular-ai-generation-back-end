@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpdateProfileRequest;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -60,13 +62,39 @@ class AuthController extends Controller
     {
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json([
-            'message' => 'Logged out successfully',
-        ]);
+        return response()->json(null, 204);
     }
 
     public function user(Request $request): JsonResponse
     {
         return response()->json($request->user());
+    }
+
+    public function updateProfile(UpdateProfileRequest $request): UserResource
+    {
+        $user = $request->user();
+        $validated = $request->validated();
+
+        if (isset($validated['name'])) {
+            $user->name = $validated['name'];
+        }
+
+        $profileData = array_filter([
+            'bio' => $validated['bio'] ?? null,
+            'avatar_url' => $validated['avatar_url'] ?? null,
+            'website' => $validated['website'] ?? null,
+            'location' => $validated['location'] ?? null,
+        ], fn ($v) => $v !== null);
+
+        if (!empty($profileData)) {
+            $user->profile()->updateOrCreate(
+                ['user_id' => $user->id],
+                $profileData
+            );
+        }
+
+        $user->save();
+
+        return new UserResource($user->load('profile'));
     }
 }

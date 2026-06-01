@@ -74,8 +74,7 @@ class AuthTest extends TestCase
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
             ->postJson('/api/v1/auth/logout');
 
-        $response->assertStatus(200)
-            ->assertJson(['message' => 'Logged out successfully']);
+        $response->assertStatus(204);
     }
 
     public function test_user_can_get_profile(): void
