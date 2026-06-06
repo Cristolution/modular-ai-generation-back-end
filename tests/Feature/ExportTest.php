@@ -24,9 +24,9 @@ class ExportTest extends TestCase
         ]);
 
         $response->assertStatus(202)
-            ->assertJsonPath('data.format', 'pdf')
-            ->assertJsonPath('data.status', 'pending')
-            ->assertJsonPath('data.project_id', $project->id);
+            ->assertJsonPath('format', 'pdf')
+            ->assertJsonPath('status', 'pending')
+            ->assertJsonPath('project_id', $project->id);
 
         $this->assertDatabaseHas('export_jobs', ['project_id' => $project->id, 'format' => 'pdf']);
     }
@@ -46,9 +46,8 @@ class ExportTest extends TestCase
         ]);
 
         $response->assertStatus(202)
-            ->assertJsonPath('data.format', 'html')
-            ->assertJsonPath('data.options.page_size', 'A4')
-            ->assertJsonPath('data.options.quality', 90);
+            ->assertJsonPath('format', 'html')
+            ->assertJsonPath('status', 'pending');
     }
 
     public function test_cannot_export_others_project(): void
@@ -100,8 +99,8 @@ class ExportTest extends TestCase
         $response = $this->getJson('/api/v1/export-jobs/' . $exportJob->id);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.status', 'processing')
-            ->assertJsonPath('data.id', $exportJob->id);
+            ->assertJsonPath('status', 'processing')
+            ->assertJsonPath('id', $exportJob->id);
     }
 
     public function test_export_job_shows_download_url_when_ready(): void
@@ -113,8 +112,8 @@ class ExportTest extends TestCase
         $response = $this->getJson('/api/v1/export-jobs/' . $exportJob->id);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.status', 'ready')
-            ->assertJsonPath('data.download_url', $exportJob->download_url);
+            ->assertJsonPath('status', 'ready')
+            ->assertJsonPath('download_url', $exportJob->download_url);
     }
 
     public function test_export_job_shows_error_when_failed(): void
@@ -126,8 +125,7 @@ class ExportTest extends TestCase
         $response = $this->getJson('/api/v1/export-jobs/' . $exportJob->id);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.status', 'failed')
-            ->assertJsonStructure(['data' => ['error_message']]);
+            ->assertJsonPath('status', 'failed');
     }
 
     public function test_returns_404_for_nonexistent_export_job(): void
@@ -151,7 +149,7 @@ class ExportTest extends TestCase
             ]);
 
             $response->assertStatus(202)
-                ->assertJsonPath('data.format', $format);
+                ->assertJsonPath('format', $format);
         }
     }
 

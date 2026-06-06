@@ -72,7 +72,7 @@ class TemplateTest extends TestCase
         $response = $this->getJson('/api/v1/templates/' . $template->id);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.name', 'Test Template');
+            ->assertJsonPath('name', 'Test Template');
     }
 
     public function test_cannot_view_private_template_without_auth(): void
@@ -109,7 +109,7 @@ class TemplateTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('data.name', 'My Template');
+            ->assertJsonPath('name', 'My Template');
 
         $this->assertDatabaseHas('templates', ['name' => 'My Template']);
     }
@@ -137,7 +137,7 @@ class TemplateTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.name', 'Updated Name');
+            ->assertJsonPath('name', 'Updated Name');
     }
 
     public function test_cannot_update_others_template(): void
@@ -178,8 +178,8 @@ class TemplateTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('data.name', 'My Fork')
-            ->assertJsonPath('data.template_id', $template->id);
+            ->assertJsonPath('name', 'My Fork')
+            ->assertJsonPath('template_id', $template->id);
 
         $this->assertDatabaseHas('projects', ['name' => 'My Fork']);
     }
@@ -221,7 +221,7 @@ class TemplateTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('data.name', 'slide-01.html');
+            ->assertJsonPath('name', 'slide-01.html');
     }
 
     public function test_can_upvote_template(): void

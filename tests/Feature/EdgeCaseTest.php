@@ -208,9 +208,9 @@ class EdgeCaseTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('data.visibility', 'unlisted')
-            ->assertJsonPath('data.locale', 'ar')
-            ->assertJsonPath('data.direction', 'rtl');
+            ->assertJsonPath('visibility', 'unlisted')
+            ->assertJsonPath('locale', 'ar')
+            ->assertJsonPath('direction', 'rtl');
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -373,7 +373,7 @@ class EdgeCaseTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.status', 'published');
+            ->assertJsonPath('status', 'published');
     }
 
     public function test_can_update_project_visibility(): void
@@ -387,7 +387,7 @@ class EdgeCaseTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.visibility', 'public');
+            ->assertJsonPath('visibility', 'public');
     }
 
     public function test_can_filter_projects_by_status(): void
@@ -504,7 +504,7 @@ class EdgeCaseTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.content', $specialContent);
+            ->assertJsonPath('content', $specialContent);
     }
 
     public function test_can_update_file_content_with_unicode(): void
@@ -521,7 +521,7 @@ class EdgeCaseTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.content', $unicodeContent);
+            ->assertJsonPath('content', $unicodeContent);
     }
 
     public function test_can_update_file_content_with_json(): void
@@ -558,7 +558,7 @@ class EdgeCaseTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.name', 'renamed-slide.html');
+            ->assertJsonPath('name', 'renamed-slide.html');
     }
 
     public function test_can_update_file_sort_order(): void
@@ -573,7 +573,7 @@ class EdgeCaseTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.sort_order', 5);
+            ->assertJsonPath('sort_order', 5);
     }
 
     public function test_reorder_files_with_invalid_uuid(): void
@@ -734,8 +734,8 @@ class EdgeCaseTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.name', 'Updated Only')
-            ->assertJsonPath('data.description', 'Original description');
+            ->assertJsonPath('name', 'Updated Only')
+            ->assertJsonPath('description', 'Original description');
     }
 
     public function test_update_project_partialy(): void
@@ -753,8 +753,8 @@ class EdgeCaseTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.status', 'published')
-            ->assertJsonPath('data.name', 'Original');
+            ->assertJsonPath('status', 'published')
+            ->assertJsonPath('name', 'Original');
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -784,8 +784,8 @@ class EdgeCaseTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('data.name', 'My Forked Project')
-            ->assertJsonPath('data.template_id', $template->id);
+            ->assertJsonPath('name', 'My Forked Project')
+            ->assertJsonPath('template_id', $template->id);
 
         $project = Project::where('name', 'My Forked Project')->first();
         $this->assertEquals(2, $project->files()->count());

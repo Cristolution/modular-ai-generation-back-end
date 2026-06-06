@@ -13,11 +13,11 @@ return new class extends Migration
             $table->uuid('user_id');
             $table->string('provider');
             $table->string('display_name')->nullable();
-            $table->string('api_key_encrypted')->nullable();
+            $table->text('api_key_encrypted')->nullable();
             $table->string('base_url');
             $table->string('default_model')->nullable();
             $table->boolean('is_active')->default(true);
-            $table->timestamp('created_at');
+            $table->timestamp('created_at')->useCurrent();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->unique(['user_id', 'provider'], 'idx_user_provider');

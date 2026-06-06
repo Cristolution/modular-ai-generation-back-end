@@ -48,7 +48,7 @@ class ProjectTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('data.name', 'My Project');
+            ->assertJsonPath('name', 'My Project');
 
         $this->assertDatabaseHas('projects', ['name' => 'My Project']);
     }
@@ -62,7 +62,7 @@ class ProjectTest extends TestCase
         $response = $this->getJson('/api/v1/projects/' . $project->id);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.id', $project->id);
+            ->assertJsonPath('id', $project->id);
     }
 
     public function test_cannot_view_others_project(): void
@@ -88,7 +88,7 @@ class ProjectTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.name', 'Updated Name');
+            ->assertJsonPath('name', 'Updated Name');
     }
 
     public function test_can_delete_own_project(): void
@@ -129,7 +129,7 @@ class ProjectTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('data.name', 'slide-01.html');
+            ->assertJsonPath('name', 'slide-01.html');
     }
 
     public function test_can_update_project_file(): void
@@ -144,7 +144,7 @@ class ProjectTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.content', '<div>Updated</div>');
+            ->assertJsonPath('content', '<div>Updated</div>');
     }
 
     public function test_can_delete_project_file(): void

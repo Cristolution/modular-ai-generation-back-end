@@ -23,7 +23,7 @@ return new class extends Migration
             $table->text('error_message')->nullable();
             $table->integer('tokens_used')->nullable();
             $table->integer('duration_ms')->nullable();
-            $table->timestamp('created_at');
+            $table->timestamp('created_at')->useCurrent();
             $table->timestamp('completed_at')->nullable();
 
             $table->foreign('file_id')->references('id')->on('files')->onDelete('set null');

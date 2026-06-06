@@ -47,21 +47,19 @@ class ProjectController extends Controller
             'user_id' => $request->user()->id,
         ]);
 
-        return (new ProjectResource($project->load(['user', 'type'])))
-            ->response()
-            ->setStatusCode(201);
+        return response()->json(new ProjectResource($project->load(['user', 'type'])), 201);
     }
 
-    public function show(Request $request, string $projectId): ProjectResource
+    public function show(Request $request, string $projectId): JsonResponse
     {
         $project = Project::with(['user', 'type'])->findOrFail($projectId);
 
         Gate::authorize('view', $project);
 
-        return new ProjectResource($project);
+        return response()->json(new ProjectResource($project));
     }
 
-    public function update(UpdateProjectRequest $request, string $projectId): ProjectResource
+    public function update(UpdateProjectRequest $request, string $projectId): JsonResponse
     {
         $project = Project::findOrFail($projectId);
 
@@ -69,7 +67,7 @@ class ProjectController extends Controller
 
         $project->update($request->validated());
 
-        return new ProjectResource($project->load(['user', 'type']));
+        return response()->json(new ProjectResource($project->load(['user', 'type'])));
     }
 
     public function destroy(Request $request, string $projectId): JsonResponse
@@ -106,22 +104,20 @@ class ProjectController extends Controller
             'user_id' => $request->user()->id,
         ]);
 
-        return (new FileResource($file))
-            ->response()
-            ->setStatusCode(201);
+        return response()->json(new FileResource($file), 201);
     }
 
-    public function showFile(Request $request, string $projectId, string $fileId): FileResource
+    public function showFile(Request $request, string $projectId, string $fileId): JsonResponse
     {
         $project = Project::findOrFail($projectId);
         $file = $project->files()->findOrFail($fileId);
 
         Gate::authorize('view', $project);
 
-        return new FileResource($file);
+        return response()->json(new FileResource($file));
     }
 
-    public function updateFile(UpdateFileRequest $request, string $projectId, string $fileId): FileResource
+    public function updateFile(UpdateFileRequest $request, string $projectId, string $fileId): JsonResponse
     {
         $project = Project::findOrFail($projectId);
         $file = $project->files()->findOrFail($fileId);
@@ -130,7 +126,7 @@ class ProjectController extends Controller
 
         $file->update($request->validated());
 
-        return new FileResource($file);
+        return response()->json(new FileResource($file));
     }
 
     public function destroyFile(Request $request, string $projectId, string $fileId): JsonResponse

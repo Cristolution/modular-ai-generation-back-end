@@ -19,8 +19,8 @@ return new class extends Migration
             $table->json('placeholders')->nullable();
             $table->string('visibility')->default('private');
             $table->json('tags')->nullable();
-            $table->timestamp('created_at');
-            $table->timestamp('updated_at');
+            $table->timestamp('created_at')->useCurrent();
+            $table->timestamp('updated_at')->useCurrent();
             $table->timestamp('deleted_at')->nullable();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');

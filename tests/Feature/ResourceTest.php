@@ -70,7 +70,7 @@ class ResourceTest extends TestCase
         $response = $this->getJson('/api/v1/resources/' . $resource->id);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.name', 'Test Resource');
+            ->assertJsonPath('name', 'Test Resource');
     }
 
     public function test_cannot_view_private_resource_without_auth(): void
@@ -107,8 +107,8 @@ class ResourceTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('data.name', 'My Prompt')
-            ->assertJsonPath('data.kind', 'prompt');
+            ->assertJsonPath('name', 'My Prompt')
+            ->assertJsonPath('kind', 'prompt');
 
         $this->assertDatabaseHas('resources', ['name' => 'My Prompt']);
     }
@@ -139,7 +139,7 @@ class ResourceTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.name', 'Updated');
+            ->assertJsonPath('name', 'Updated');
     }
 
     public function test_cannot_update_others_resource(): void
@@ -179,8 +179,8 @@ class ResourceTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('data.name', 'My Fork')
-            ->assertJsonPath('data.forked_from_id', $original->id);
+            ->assertJsonPath('name', 'My Fork')
+            ->assertJsonPath('forked_from_id', $original->id);
     }
 
     public function test_cannot_fork_private_resource_without_access(): void
@@ -255,7 +255,7 @@ class ResourceTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('data.body', 'This is a great resource!');
+            ->assertJsonPath('body', 'This is a great resource!');
 
         $this->assertDatabaseHas('comments', ['body' => 'This is a great resource!']);
     }
@@ -310,6 +310,6 @@ class ResourceTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('data.placeholders.0.key', 'task');
+            ->assertJsonPath('placeholders.0.key', 'task');
     }
 }

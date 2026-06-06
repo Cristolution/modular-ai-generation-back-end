@@ -14,7 +14,6 @@ class AiJobResource extends JsonResource
             'project_id' => $this->project_id,
             'template_id' => $this->template_id,
             'file_id' => $this->file_id,
-            'provider_id' => $this->provider_id,
             'provider' => $this->provider,
             'model' => $this->model,
             'layer' => $this->layer,

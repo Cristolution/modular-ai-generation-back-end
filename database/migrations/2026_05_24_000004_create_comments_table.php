@@ -15,8 +15,8 @@ return new class extends Migration
             $table->string('target_type');
             $table->uuid('parent_id')->nullable();
             $table->text('body');
-            $table->timestamp('created_at');
-            $table->timestamp('updated_at');
+            $table->timestamp('created_at')->useCurrent();
+            $table->timestamp('updated_at')->useCurrent();
             $table->timestamp('deleted_at')->nullable();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');

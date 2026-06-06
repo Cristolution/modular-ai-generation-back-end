@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 
 class CommentController extends Controller
 {
-    public function update(Request $request, string $commentId): CommentResource
+    public function update(Request $request, string $commentId): JsonResponse
     {
         $comment = Comment::findOrFail($commentId);
 
@@ -23,7 +23,7 @@ class CommentController extends Controller
 
         $comment->update($validated);
 
-        return new CommentResource($comment->load(['user']));
+        return response()->json(new CommentResource($comment->load(['user'])));
     }
 
     public function destroy(Request $request, string $commentId): JsonResponse

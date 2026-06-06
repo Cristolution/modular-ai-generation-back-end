@@ -9,6 +9,8 @@ class ResourceResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $user = $request->user();
+
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
@@ -23,8 +25,8 @@ class ResourceResource extends JsonResource
             'tags' => $this->tags ?? [],
             'upvote_count' => $this->upvotes()->count(),
             'fork_count' => $this->forks()->count(),
-            'is_upvoted' => $this->when($request->user(), fn () => $this->upvotes()->where('user_id', $request->user()->id)->exists()),
-            'is_bookmarked' => $this->when($request->user(), fn () => $this->bookmarks()->where('user_id', $request->user()->id)->exists()),
+            'is_upvoted' => $user ? $this->upvotes()->where('user_id', $user->id)->exists() : false,
+            'is_bookmarked' => $user ? $this->bookmarks()->where('user_id', $user->id)->exists() : false,
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

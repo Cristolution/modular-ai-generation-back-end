@@ -75,9 +75,9 @@ class AiJobTest extends TestCase
         ]);
 
         $response->assertStatus(202)
-            ->assertJsonPath('data.status', 'pending')
-            ->assertJsonPath('data.project_id', $project->id)
-            ->assertJsonPath('data.provider', 'openai');
+            ->assertJsonPath('status', 'pending')
+            ->assertJsonPath('project_id', $project->id)
+            ->assertJsonPath('provider', 'openai');
 
         $this->assertDatabaseHas('ai_jobs', [
             'project_id' => $project->id,
@@ -117,9 +117,9 @@ class AiJobTest extends TestCase
         ]);
 
         $response->assertStatus(202)
-            ->assertJsonPath('data.status', 'pending')
-            ->assertJsonPath('data.file_id', $file->id)
-            ->assertJsonPath('data.layer', 'slide');
+            ->assertJsonPath('status', 'pending')
+            ->assertJsonPath('file_id', $file->id)
+            ->assertJsonPath('layer', 'slide');
     }
 
     public function test_cannot_generate_layer_for_others_file(): void
@@ -165,8 +165,8 @@ class AiJobTest extends TestCase
         $response = $this->getJson('/api/v1/jobs/' . $job->id);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.id', $job->id)
-            ->assertJsonPath('data.status', 'success');
+            ->assertJsonPath('id', $job->id)
+            ->assertJsonPath('status', 'success');
     }
 
     public function test_user_cannot_poll_others_job(): void
@@ -210,7 +210,7 @@ class AiJobTest extends TestCase
         ]);
 
         $response->assertStatus(202)
-            ->assertJsonPath('data.model', 'gpt-4-turbo');
+            ->assertJsonPath('model', 'gpt-4-turbo');
     }
 
     public function test_jobs_list_is_paginated(): void

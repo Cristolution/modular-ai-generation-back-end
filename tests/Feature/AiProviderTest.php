@@ -53,10 +53,10 @@ class AiProviderTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('data.provider', 'openai')
-            ->assertJsonPath('data.display_name', 'My OpenAI')
-            ->assertJsonPath('data.has_key', true)
-            ->assertJsonPath('data.is_active', true);
+            ->assertJsonPath('provider', 'openai')
+            ->assertJsonPath('display_name', 'My OpenAI')
+            ->assertJsonPath('has_key', true)
+            ->assertJsonPath('is_active', true);
 
         $this->assertDatabaseHas('user_ai_providers', [
             'user_id' => $user->id,
@@ -78,8 +78,8 @@ class AiProviderTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('data.provider', 'local')
-            ->assertJsonPath('data.has_key', false);
+            ->assertJsonPath('provider', 'local')
+            ->assertJsonPath('has_key', false);
     }
 
     public function test_cannot_create_ai_provider_with_invalid_provider(): void
@@ -119,8 +119,8 @@ class AiProviderTest extends TestCase
         $response = $this->getJson('/api/v1/me/ai-providers/' . $provider->id);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.id', $provider->id)
-            ->assertJsonPath('data.provider', 'openai');
+            ->assertJsonPath('id', $provider->id)
+            ->assertJsonPath('provider', 'openai');
     }
 
     public function test_cannot_view_others_ai_provider(): void
@@ -147,8 +147,8 @@ class AiProviderTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.display_name', 'Updated OpenAI')
-            ->assertJsonPath('data.is_active', false);
+            ->assertJsonPath('display_name', 'Updated OpenAI')
+            ->assertJsonPath('is_active', false);
     }
 
     public function test_can_update_api_key(): void
@@ -162,7 +162,7 @@ class AiProviderTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.has_key', true);
+            ->assertJsonPath('has_key', true);
 
         $provider->refresh();
         $this->assertNotEquals($provider->getRawOriginal('api_key_encrypted'), encrypt('sk-new-key-123456'));
@@ -288,7 +288,7 @@ class AiProviderTest extends TestCase
         $response = $this->getJson('/api/v1/me/ai-providers/' . $provider->id);
 
         $response->assertStatus(200);
-        $this->assertArrayNotHasKey('api_key', $response->json('data'));
-        $this->assertArrayNotHasKey('api_key_encrypted', $response->json('data'));
+        $this->assertArrayNotHasKey('api_key', $response->json());
+        $this->assertArrayNotHasKey('api_key_encrypted', $response->json());
     }
 }

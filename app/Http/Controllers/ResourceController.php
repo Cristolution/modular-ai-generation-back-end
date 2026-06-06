@@ -56,12 +56,10 @@ class ResourceController extends Controller
             'user_id' => $request->user()->id,
         ]);
 
-        return (new ResourceResource($resource->load(['user'])))
-            ->response()
-            ->setStatusCode(201);
+        return response()->json(new ResourceResource($resource->load(['user'])), 201);
     }
 
-    public function show(Request $request, string $resourceId): ResourceResource
+    public function show(Request $request, string $resourceId): JsonResponse
     {
         $resource = Resource::with(['user'])->findOrFail($resourceId);
 
@@ -69,10 +67,10 @@ class ResourceController extends Controller
             abort(403);
         }
 
-        return new ResourceResource($resource);
+        return response()->json(new ResourceResource($resource));
     }
 
-    public function update(UpdateResourceRequest $request, string $resourceId): ResourceResource
+    public function update(UpdateResourceRequest $request, string $resourceId): JsonResponse
     {
         $resource = Resource::findOrFail($resourceId);
 
@@ -82,7 +80,7 @@ class ResourceController extends Controller
 
         $resource->update($request->validated());
 
-        return new ResourceResource($resource->load(['user']));
+        return response()->json(new ResourceResource($resource->load(['user'])));
     }
 
     public function destroy(Request $request, string $resourceId): JsonResponse
@@ -118,9 +116,7 @@ class ResourceController extends Controller
             'tags' => $original->tags,
         ]);
 
-        return (new ResourceResource($fork->load(['user'])))
-            ->response()
-            ->setStatusCode(201);
+        return response()->json(new ResourceResource($fork->load(['user'])), 201);
     }
 
     public function forks(Request $request, string $resourceId): AnonymousResourceCollection
@@ -220,8 +216,6 @@ class ResourceController extends Controller
             'body' => $validated['body'],
         ]);
 
-        return (new \App\Http\Resources\CommentResource($comment->load(['user'])))
-            ->response()
-            ->setStatusCode(201);
+        return response()->json(new \App\Http\Resources\CommentResource($comment->load(['user'])), 201);
     }
 }

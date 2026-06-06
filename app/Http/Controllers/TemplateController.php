@@ -62,21 +62,19 @@ class TemplateController extends Controller
             'user_id' => $request->user()->id,
         ]);
 
-        return (new TemplateResource($template->load(['user', 'type'])))
-            ->response()
-            ->setStatusCode(201);
+        return response()->json(new TemplateResource($template->load(['user', 'type'])), 201);
     }
 
-    public function show(Request $request, string $templateId): TemplateResource
+    public function show(Request $request, string $templateId): JsonResponse
     {
         $template = Template::with(['user', 'type'])->findOrFail($templateId);
 
         Gate::authorize('view', $template);
 
-        return new TemplateResource($template);
+        return response()->json(new TemplateResource($template));
     }
 
-    public function update(UpdateTemplateRequest $request, string $templateId): TemplateResource
+    public function update(UpdateTemplateRequest $request, string $templateId): JsonResponse
     {
         $template = Template::findOrFail($templateId);
 
@@ -84,7 +82,7 @@ class TemplateController extends Controller
 
         $template->update($request->validated());
 
-        return new TemplateResource($template->load(['user', 'type']));
+        return response()->json(new TemplateResource($template->load(['user', 'type'])));
     }
 
     public function destroy(Request $request, string $templateId): JsonResponse
@@ -132,9 +130,7 @@ class TemplateController extends Controller
             ]);
         }
 
-        return (new \App\Http\Resources\ProjectResource($project->load(['user', 'type'])))
-            ->response()
-            ->setStatusCode(201);
+        return response()->json(new \App\Http\Resources\ProjectResource($project->load(['user', 'type'])), 201);
     }
 
     public function files(Request $request, string $templateId): AnonymousResourceCollection
@@ -160,22 +156,20 @@ class TemplateController extends Controller
             'user_id' => $request->user()->id,
         ]);
 
-        return (new FileResource($file))
-            ->response()
-            ->setStatusCode(201);
+        return response()->json(new FileResource($file), 201);
     }
 
-    public function showFile(Request $request, string $templateId, string $fileId): FileResource
+    public function showFile(Request $request, string $templateId, string $fileId): JsonResponse
     {
         $template = Template::findOrFail($templateId);
         $file = $template->files()->findOrFail($fileId);
 
         Gate::authorize('view', $template);
 
-        return new FileResource($file);
+        return response()->json(new FileResource($file));
     }
 
-    public function updateFile(UpdateFileRequest $request, string $templateId, string $fileId): FileResource
+    public function updateFile(UpdateFileRequest $request, string $templateId, string $fileId): JsonResponse
     {
         $template = Template::findOrFail($templateId);
         $file = $template->files()->findOrFail($fileId);
@@ -184,7 +178,7 @@ class TemplateController extends Controller
 
         $file->update($request->validated());
 
-        return new FileResource($file);
+        return response()->json(new FileResource($file));
     }
 
     public function destroyFile(Request $request, string $templateId, string $fileId): JsonResponse
@@ -282,8 +276,6 @@ class TemplateController extends Controller
             'body' => $validated['body'],
         ]);
 
-        return (new \App\Http\Resources\CommentResource($comment->load(['user'])))
-            ->response()
-            ->setStatusCode(201);
+        return response()->json(new \App\Http\Resources\CommentResource($comment->load(['user'])), 201);
     }
 }

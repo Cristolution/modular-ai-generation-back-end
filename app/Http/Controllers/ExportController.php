@@ -26,15 +26,13 @@ class ExportController extends Controller
             'status' => 'pending',
         ]);
 
-        return (new ExportJobResource($exportJob))
-            ->response()
-            ->setStatusCode(202);
+        return response()->json(new ExportJobResource($exportJob), 202);
     }
 
-    public function show(string $jobId): ExportJobResource
+    public function show(string $jobId): JsonResponse
     {
         $exportJob = ExportJob::findOrFail($jobId);
 
-        return new ExportJobResource($exportJob);
+        return response()->json(new ExportJobResource($exportJob));
     }
 }

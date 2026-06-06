@@ -25,13 +25,13 @@ class AiJobController extends Controller
         return AiJobResource::collection($jobs);
     }
 
-    public function show(Request $request, string $jobId): AiJobResource
+    public function show(Request $request, string $jobId): JsonResponse
     {
         $job = AiJob::whereHas('project', fn ($q) => $q->where('user_id', $request->user()->id))
             ->orWhereHas('template', fn ($q) => $q->where('user_id', $request->user()->id))
             ->findOrFail($jobId);
 
-        return new AiJobResource($job);
+        return response()->json(new AiJobResource($job));
     }
 
     public function generateFull(GenerateFullRequest $request, string $projectId): JsonResponse
@@ -52,9 +52,7 @@ class AiJobController extends Controller
             'created_at' => now(),
         ]);
 
-        return (new AiJobResource($job))
-            ->response()
-            ->setStatusCode(202);
+        return response()->json(new AiJobResource($job), 202);
     }
 
     public function generateLayer(GenerateLayerRequest $request, string $projectId, string $fileId): JsonResponse
@@ -79,8 +77,6 @@ class AiJobController extends Controller
             'created_at' => now(),
         ]);
 
-        return (new AiJobResource($job))
-            ->response()
-            ->setStatusCode(202);
+        return response()->json(new AiJobResource($job), 202);
     }
 }

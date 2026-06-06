@@ -17,8 +17,8 @@ return new class extends Migration
             $table->timestamp('expires_at')->nullable();
             $table->text('error_message')->nullable();
             $table->json('options')->nullable();
-            $table->timestamp('created_at');
-            $table->timestamp('updated_at');
+            $table->timestamp('created_at')->useCurrent();
+            $table->timestamp('updated_at')->useCurrent();
 
             $table->foreign('project_id')->references('id')->on('projects')->onDelete('cascade');
         });

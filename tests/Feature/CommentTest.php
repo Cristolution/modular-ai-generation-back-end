@@ -25,7 +25,7 @@ class CommentTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('data.body', 'Great template!');
+            ->assertJsonPath('body', 'Great template!');
 
         $this->assertDatabaseHas('comments', ['body' => 'Great template!']);
     }
@@ -58,7 +58,7 @@ class CommentTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('data.parent_id', $parentComment->id);
+            ->assertJsonPath('parent_id', $parentComment->id);
     }
 
     public function test_cannot_reply_to_nonexistent_parent(): void
@@ -88,7 +88,7 @@ class CommentTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.body', 'Updated comment');
+            ->assertJsonPath('body', 'Updated comment');
     }
 
     public function test_cannot_edit_others_comment(): void
@@ -192,7 +192,7 @@ class CommentTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('data.body', 'Great resource!');
+            ->assertJsonPath('body', 'Great resource!');
     }
 
     public function test_comments_on_private_resource_require_ownership(): void

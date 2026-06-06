@@ -32,19 +32,17 @@ class AiProviderController extends Controller
             'created_at' => now(),
         ]);
 
-        return (new AiProviderResource($provider))
-            ->response()
-            ->setStatusCode(201);
+        return response()->json(new AiProviderResource($provider), 201);
     }
 
-    public function show(Request $request, string $providerId): AiProviderResource
+    public function show(Request $request, string $providerId): JsonResponse
     {
         $provider = $request->user()->aiProviders()->findOrFail($providerId);
 
-        return new AiProviderResource($provider);
+        return response()->json(new AiProviderResource($provider));
     }
 
-    public function update(UpdateAiProviderRequest $request, string $providerId): AiProviderResource
+    public function update(UpdateAiProviderRequest $request, string $providerId): JsonResponse
     {
         $provider = $request->user()->aiProviders()->findOrFail($providerId);
 
@@ -57,7 +55,7 @@ class AiProviderController extends Controller
 
         $provider->update($data);
 
-        return new AiProviderResource($provider);
+        return response()->json(new AiProviderResource($provider));
     }
 
     public function destroy(Request $request, string $providerId): JsonResponse
