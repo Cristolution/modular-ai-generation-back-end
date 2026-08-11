@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\File;
 use App\Models\Template;
 use App\Models\Type;
 use App\Models\User;
@@ -53,6 +54,30 @@ class TemplateFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'visibility' => 'private',
+        ]);
+    }
+
+    public function unlisted(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'visibility' => 'unlisted',
+        ]);
+    }
+
+    public function withFiles(int $count = 6): static
+    {
+        return $this->afterCreating(function (Template $template) use ($count) {
+            File::factory()
+                ->count($count)
+                ->forTemplate($template)
+                ->create();
+        });
+    }
+
+    public function withTags(array $tags): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'tags' => $tags,
         ]);
     }
 }

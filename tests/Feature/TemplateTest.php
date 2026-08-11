@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\File;
+use App\Models\Project;
 use App\Models\Template;
 use App\Models\Type;
 use App\Models\User;
@@ -299,5 +300,45 @@ class TemplateTest extends TestCase
             ['Fork 1', 'Fork 2'],
             $template->forks->pluck('name')->all()
         );
+    }
+
+    public function test_factory_unlisted_state_creates_unlisted_template(): void
+    {
+        $template = Template::factory()->unlisted()->create();
+
+        $this->assertEquals('unlisted', $template->visibility);
+    }
+
+    public function test_factory_withFiles_state_attaches_files(): void
+    {
+        $template = Template::factory()->public()->withFiles(3)->create();
+
+        $this->assertCount(3, $template->files);
+        $this->assertEquals(3, File::where('template_id', $template->id)->count());
+    }
+
+    public function test_factory_withTags_state_sets_tags(): void
+    {
+        $tags = ['pitch', 'investor', 'minimal'];
+        $template = Template::factory()->withTags($tags)->create();
+
+        $this->assertEquals($tags, $template->tags);
+    }
+
+    public function test_fork_template_with_files_copies_them_to_project(): void
+    {
+        $user = User::factory()->create();
+        $template = Template::factory()->public()->withFiles(3)->create();
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson('/api/v1/templates/' . $template->id . '/fork', [
+            'name' => 'Fork With Files',
+        ]);
+
+        $response->assertStatus(201);
+
+        $project = Project::where('name', 'Fork With Files')->first();
+        $this->assertNotNull($project);
+        $this->assertCount(3, $project->files);
     }
 }
