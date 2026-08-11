@@ -42,9 +42,12 @@ class ProjectController extends Controller
 
     public function store(CreateProjectRequest $request): JsonResponse
     {
+        $validated = $request->validated();
+
         $project = Project::create([
-            ...$request->validated(),
+            ...$validated,
             'user_id' => $request->user()->id,
+            'cloned_at' => isset($validated['template_id']) ? now() : null,
         ]);
 
         return response()->json(new ProjectResource($project->load(['user', 'type'])), 201);

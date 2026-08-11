@@ -264,4 +264,40 @@ class TemplateTest extends TestCase
         $response->assertStatus(200)
             ->assertJson(['bookmarked' => true]);
     }
+
+    public function test_fork_template_sets_cloned_at(): void
+    {
+        $user = User::factory()->create();
+        $template = Template::factory()->public()->create();
+        File::factory()->create(['template_id' => $template->id, 'user_id' => $template->user_id]);
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson('/api/v1/templates/' . $template->id . '/fork', [
+            'name' => 'My Fork',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('template_id', $template->id);
+
+        $this->assertNotNull($response->json('cloned_at'));
+    }
+
+    public function test_template_forks_relationship_returns_forked_projects(): void
+    {
+        $user = User::factory()->create();
+        $template = Template::factory()->public()->create();
+        File::factory()->create(['template_id' => $template->id, 'user_id' => $template->user_id]);
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/v1/templates/' . $template->id . '/fork', ['name' => 'Fork 1']);
+        $this->postJson('/api/v1/templates/' . $template->id . '/fork', ['name' => 'Fork 2']);
+
+        $template->refresh();
+
+        $this->assertCount(2, $template->forks);
+        $this->assertEqualsCanonicalizing(
+            ['Fork 1', 'Fork 2'],
+            $template->forks->pluck('name')->all()
+        );
+    }
 }

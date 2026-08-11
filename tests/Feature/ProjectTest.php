@@ -173,4 +173,56 @@ class ProjectTest extends TestCase
 
         $response->assertStatus(200);
     }
+
+    public function test_create_project_with_template_id_sets_cloned_at(): void
+    {
+        $user = User::factory()->create();
+        $type = Type::factory()->create();
+        $template = Template::factory()->create(['type_id' => $type->id]);
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson('/api/v1/projects', [
+            'type_id' => $type->id,
+            'template_id' => $template->id,
+            'name' => 'Forked Project',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('template_id', $template->id);
+
+        $this->assertNotNull($response->json('cloned_at'));
+    }
+
+    public function test_create_project_without_template_id_leaves_cloned_at_null(): void
+    {
+        $user = User::factory()->create();
+        $type = Type::factory()->create();
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson('/api/v1/projects', [
+            'type_id' => $type->id,
+            'name' => 'Standalone Project',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('template_id', null);
+
+        $this->assertNull($response->json('cloned_at'));
+    }
+
+    public function test_create_project_with_invalid_template_id_returns_422(): void
+    {
+        $user = User::factory()->create();
+        $type = Type::factory()->create();
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson('/api/v1/projects', [
+            'type_id' => $type->id,
+            'template_id' => '00000000-0000-0000-0000-000000000000',
+            'name' => 'Bad Project',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['template_id']);
+    }
 }
