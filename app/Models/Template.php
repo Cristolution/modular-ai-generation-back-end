@@ -52,6 +52,11 @@ class Template extends Model
         return $this->hasMany(File::class);
     }
 
+    public function forks(): HasMany
+    {
+        return $this->hasMany(Project::class);
+    }
+
     public function upvotes(): MorphMany
     {
         return $this->morphMany(Upvote::class, 'target');

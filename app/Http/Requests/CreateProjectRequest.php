@@ -15,6 +15,7 @@ class CreateProjectRequest extends FormRequest
     {
         return [
             'type_id' => 'required|uuid|exists:types,id',
+            'template_id' => 'sometimes|uuid|exists:templates,id',
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'visibility' => 'sometimes|string|in:public,private,unlisted',

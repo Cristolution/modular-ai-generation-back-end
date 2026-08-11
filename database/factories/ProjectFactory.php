@@ -22,7 +22,7 @@ class ProjectFactory extends Factory
 
         return [
             'user_id' => User::factory(),
-            'template_id' => null,
+            'template_id' => Template::inRandomOrder()->first()?->id ?? Template::factory(),
             'type_id' => $type->id,
             'origin_template_name' => null,
             'name' => fake()->sentence(3),

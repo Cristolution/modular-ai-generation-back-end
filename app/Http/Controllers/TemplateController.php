@@ -112,6 +112,7 @@ class TemplateController extends Controller
             'tags' => $template->tags,
             'locale' => $template->locale,
             'direction' => $template->direction,
+            'cloned_at' => now(),
         ]);
 
         $template->increment('fork_count');

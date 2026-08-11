@@ -20,6 +20,7 @@ class ProjectSeeder extends BaseSeeder
         ]);
 
         $types = Type::all();
+        $templates = Template::all();
 
         $projects = [
             [
@@ -56,6 +57,7 @@ class ProjectSeeder extends BaseSeeder
 
             $project = Project::factory()->create([
                 'user_id' => $user->id,
+                'template_id' => $templates->isNotEmpty() ? $templates->random()->id : null,
                 'type_id' => $type->id,
                 'name' => $projectData['name'],
                 'description' => $projectData['description'],
@@ -64,12 +66,17 @@ class ProjectSeeder extends BaseSeeder
                 'tags' => $projectData['tags'],
                 'locale' => $projectData['locale'],
                 'direction' => $projectData['direction'],
+                'cloned_at' => $templates->isNotEmpty() ? now() : null,
             ]);
 
             $this->createProjectFiles($project, $user);
         }
 
-        Project::factory(3)->create()->each(function ($project) use ($user) {
+        Project::factory(3)->create([
+            'user_id' => $user->id,
+            'template_id' => $templates->isNotEmpty() ? $templates->random()->id : null,
+            'cloned_at' => $templates->isNotEmpty() ? now() : null,
+        ])->each(function ($project) use ($user) {
             $this->createProjectFiles($project, $user);
         });
     }
