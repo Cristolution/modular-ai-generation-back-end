@@ -214,9 +214,17 @@ trait MgfFileBuilders
     private function rulesFor(string $archetype): string
     {
         $prefix = match ($archetype) {
-            'pitch'   => "Slide titles under 8 words.\nMax 40 words per slide body.",
-            'website' => "Section titles under 10 words.\nSections are full-width bands of a single scrollable page — no fixed viewport.\nNo mgf-slide-number footer (scrollable pages do not have a 1-of-N counter).",
-            default   => "Use bullets and tables.\nKeep prose under 40 words per slide.",
+            'pitch'        => "Slide titles under 8 words.\nMax 40 words per slide body.",
+            'arabic-pitch' => "Slide titles under 7 words in Arabic.\nMax 40 words per slide body.\nDirection is RTL — keep grid/text alignment intuitive for right-to-left readers.\nUse Arabic-Indic digits (٠١٢٣...) for slide numbers when shown.",
+            'website'      => "Section titles under 10 words.\nSections are full-width bands of a single scrollable page — no fixed viewport.\nNo mgf-slide-number footer (scrollable pages do not have a 1-of-N counter).",
+            'infographic'  => "One core idea per slide.\nTables and bullet lists preferred over dense prose.\nAlways cite a source in the caption when a stat is shown.",
+            'academic-math'    => "Math is rendered with KaTeX — use <span class=\"math-inline\">…</span> and <div class=\"math-block\">…</div> with data-tex=\"…\" carrying the LaTeX source.\nDouble-escape every backslash in data-tex (e.g. \\\\frac, \\\\hbar, \\\\partial) so the browser sees a single \\ when KaTeX parses it.\nDisplay fonts are serif (Source Serif 4); body fonts are sans (Inter); inline math should visually sit on the body baseline.\nNever inline plain text substitutions for math symbols — always use the math tags.",
+            'earth-organic'    => "Tone is hopeful, evidence-led, slow-paced. No greenwashing.\nPage numbers, dates, and stats must be sourced in the caption when the value is decisive.\nDisplay fonts are serif (Source Serif 4); body fonts are sans (Inter). Larger margin than the pitch archetype.",
+            'neon-cyber'       => "Tone is terse, technical, zero hype. Every claim backed by a CVE, a paper, or a measured number.\nUse bullet-style monospace eyebrows (e.g. &gt; threat) to anchor each slide's mode.\nDisplay fonts are JetBrains Mono; body fonts are Inter. Eyebrow text is the same monospace.",
+            'sunset-warm'      => "Tone is warm, optimistic, conversational. Lead with the lifestyle, close with the unit economics.\nHeadlines may be slightly playful; body prose stays plain.\nDisplay and body fonts are both Inter. Generous spacing and rounded radii.",
+            'monochrome-editorial' => "Less is more. Max 12 words per slide body. Every word earns its place.\nOnly one accent color is used (yellow); everything else is grayscale.\nDisplay and body fonts are both Inter. Use the haiku + quote + closing components for this 4-slide archetype.",
+            'vibrant-festival' => "Energy is high. Active verbs, short paragraphs, no quiet slides.\nUse the three accents (fuchsia / lime / orange) sparingly so each one has impact.\nDisplay and body fonts are both Inter. Generous radii, no fine borders.",
+            default        => "Use bullets and tables.\nKeep prose under 40 words per slide.",
         };
 
         return <<<MD
@@ -2034,6 +2042,2631 @@ trait MgfFileBuilders
               <p class="mgf-body mgf-mt-sm" data-field="address">548 Market St, San Francisco, CA</p>
             </div>
           </div>
+        </section>
+        HTML;
+    }
+
+    // ====================================================================
+    //  Arabic pitch archetype (RTL, 8 slides, Cairo + Noto Naskh Arabic)
+    // ====================================================================
+
+    /**
+     * Arabic pitch archetype — investor deck for GCC/MENA fintech.
+     * Locale: ar. Direction: rtl. Distinctive palette: dark navy +
+     * cyan accent. Distinctive typography: Cairo + Noto Naskh Arabic.
+     *
+     * Mirrors the pitch archetype's structure but localizes everything:
+     * 8 slides (vs. the LTR pitch's 10), RTL-aware markup (the
+     *   `dir="rtl"` attribute is set on the project's row in
+     *   ProjectSeeder, not on individual slides — slides are locale-
+     *   agnostic and inherit direction from the project).
+     *
+     * The trait intentionally reuses the existing mgf-* class
+     * contract. The frontend's RTL stylesheet (see frontend's
+     * `src/styles/mgf.css` direction:rtl block) mirrors grid and
+     * padding via `direction: rtl` inheritance — no separate `mgf-rtl-*`
+     * class namespace exists.
+     */
+    protected function arabicPitchFiles($owner): array
+    {
+        return [
+            ['layer' => 'meta',    'name' => 'meta.md',     'extension' => 'md',   'content' => "# {$owner->name}\n\n{$owner->description}"],
+            ['layer' => 'context', 'name' => 'context.md',  'extension' => 'md',   'content' => $this->arabicPitchContext()],
+            ['layer' => 'rules',   'name' => 'rules.md',    'extension' => 'md',   'content' => $this->rulesFor('arabic-pitch')],
+            ['layer' => 'style',   'name' => 'style.css',   'extension' => 'css',  'content' => $this->arabicPitchStyleCss()],
+            ['layer' => 'layout',  'name' => 'layout.css',  'extension' => 'css',  'content' => $this->layoutCss16x9()],
+            ['layer' => 'content', 'name' => 'data.json',   'extension' => 'json', 'content' => $this->arabicPitchDataJson($owner)],
+
+            ['layer' => 'slide', 'name' => 'slide-01.html', 'extension' => 'html', 'content' => $this->slideArabicCover()],
+            ['layer' => 'slide', 'name' => 'slide-02.html', 'extension' => 'html', 'content' => $this->slideArabicProblem()],
+            ['layer' => 'slide', 'name' => 'slide-03.html', 'extension' => 'html', 'content' => $this->slideArabicSolution()],
+            ['layer' => 'slide', 'name' => 'slide-04.html', 'extension' => 'html', 'content' => $this->slideArabicStats()],
+            ['layer' => 'slide', 'name' => 'slide-05.html', 'extension' => 'html', 'content' => $this->slideArabicFeatures()],
+            ['layer' => 'slide', 'name' => 'slide-06.html', 'extension' => 'html', 'content' => $this->slideArabicTraction()],
+            ['layer' => 'slide', 'name' => 'slide-07.html', 'extension' => 'html', 'content' => $this->slideArabicAsk()],
+            ['layer' => 'slide', 'name' => 'slide-08.html', 'extension' => 'html', 'content' => $this->slideArabicClosing()],
+        ];
+    }
+
+    private function arabicPitchContext(): string
+    {
+        return <<<MD
+        # Project Context
+
+        ## Purpose
+        جولة استثمارية (السلسلة أ) لشركة تقنية مالية في الخليج.
+
+        ## الفئة المستهدفة
+        مستثمرون مؤسسيون في قطاع التكنولوجيا المالية بمنطقة الشرق الأوسط وشمال أفريقيا.
+
+        ## نبرة العلامة التجارية
+        واثق، مختصر، يعتمد على الأرقام.
+
+        ## القيود البصرية
+        - لوحة الألوان: كحلي غامق + لمسة سيان + نص فاتح
+        - الحد الأقصى لطول العنوان: 7 كلمات
+        - الحد الأقصى لنص الشريحة: 40 كلمة
+        - اتجاه القراءة: من اليمين إلى اليسار (RTL)
+        - الخط: Cairo مع Noto Naskh Arabic كاحتياطي
+        MD;
+    }
+
+    private function arabicPitchStyleCss(): string
+    {
+        return <<<'CSS'
+        /* style.css — Arabic pitch (RTL)
+           Dark navy palette + cyan accent. Cairo is the primary
+           Arabic-friendly display family; Noto Naskh Arabic is
+           its Arabic-script fallback. The frontend's RTL stylesheet
+           applies `direction: rtl` at the deck root, so grid
+           columns, padding, and slide numbers mirror automatically —
+           no RTL-specific class namespace. */
+        :root {
+          --mgf-color-bg:            #0b0f17;
+          --mgf-color-surface:       #0f1218;
+          --mgf-color-surface-2:     #1a2238;
+          --mgf-color-border:        rgba(255, 255, 255, 0.08);
+          --mgf-color-border-strong: #1f2940;
+          --mgf-color-text-primary:  #f4f6fa;
+          --mgf-color-text-secondary:#94a3b8;
+          --mgf-color-text-inverse:  #0a0e1a;
+          --mgf-color-accent:        #22d3ee;
+          --mgf-color-accent-soft:   rgba(34, 211, 238, 0.12);
+          --mgf-color-accent-2:      #a78bfa;
+
+          --mgf-font-display: 'Cairo', 'Noto Naskh Arabic', Tahoma, sans-serif;
+          --mgf-font-body:    'Cairo', 'Noto Naskh Arabic', Tahoma, sans-serif;
+          --mgf-font-mono:    'JetBrains Mono', ui-monospace, monospace;
+
+          --mgf-text-xs:   0.75rem;
+          --mgf-text-sm:   0.9375rem;
+          --mgf-text-base: 1.0625rem;
+          --mgf-text-lg:   1.25rem;
+          --mgf-text-xl:   1.75rem;
+          --mgf-text-2xl:  2.5rem;
+          --mgf-text-3xl:  3.5rem;
+          --mgf-text-4xl:  5rem;
+          --mgf-weight-medium: 500;
+          --mgf-weight-bold:   700;
+          --mgf-leading-tight:  1.15;
+          --mgf-leading-normal: 1.5;
+          --mgf-leading-loose:  1.75;
+          --mgf-tracking-tight:  -0.02em;
+          --mgf-tracking-normal: 0em;
+          --mgf-tracking-wide:   0.08em;
+
+          --mgf-space-1:  0.25rem;
+          --mgf-space-2:  0.5rem;
+          --mgf-space-3:  0.75rem;
+          --mgf-space-4:  1rem;
+          --mgf-space-6:  1.5rem;
+          --mgf-space-8:  2rem;
+          --mgf-space-12: 3rem;
+          --mgf-space-16: 4rem;
+          --mgf-space-24: 6rem;
+
+          --mgf-radius-sm: 4px;
+          --mgf-radius-md: 10px;
+          --mgf-radius-lg: 18px;
+          --mgf-radius-xl: 28px;
+
+          --mgf-slide-w:     1280px;
+          --mgf-slide-h:     720px;
+          --mgf-slide-pad-x: 80px;
+          --mgf-slide-pad-y: 60px;
+
+          --mgf-accent-line: 3px solid var(--mgf-color-accent);
+          --mgf-divider:     1px solid var(--mgf-color-border);
+        }
+        CSS;
+    }
+
+    private function arabicPitchDataJson($owner): string
+    {
+        $payload = [
+            '_meta' => [
+                'project' => $owner->name,
+                'version' => '1.0',
+                'output_target' => 'presentation-deck',
+                'format' => '16:9',
+                'language' => 'ar',
+                'direction' => 'rtl',
+                'total_slides' => 8,
+                'components_used' => [
+                    'cover', 'problem', 'solution', 'stats',
+                    'features', 'traction', 'ask', 'closing',
+                ],
+            ],
+            'slides' => [
+                ['id' => 1, 'component' => 'cover', 'data' => [
+                    'title'    => $owner->name,
+                    'subtitle' => $owner->description,
+                    'author'   => 'فريق '.$owner->name,
+                    'date'     => 'السلسلة أ — 2026',
+                ]],
+                ['id' => 2, 'component' => 'problem', 'data' => [
+                    'eyebrow' => 'المشكلة',
+                    'title'   => 'شركات صغيرة محرومة من السيولة',
+                    'body'    => '70٪ من الشركات الصغيرة والمتوسطة في المنطقة تُرفض طلبات التمويل التقليدية بسبب نقص الضمانات وبطء الإجراءات.',
+                    'points'  => [
+                        'متوسط وقت الموافقة 45 يوماً',
+                        'فجوة تمويلية تتجاوز 220 مليار دولار',
+                        'معدل رفض يصل إلى 78٪',
+                    ],
+                ]],
+                ['id' => 3, 'component' => 'solution', 'data' => [
+                    'eyebrow' => 'الحل',
+                    'title'   => 'قرارات ائتمانية في 60 ثانية',
+                    'body'    => 'منصة ذكاء اصطناعي تربط الشركات الصغيرة بمقرضين مؤسسيين، وتُصدر قراراً مبدئياً في دقيقة واحدة.',
+                ]],
+                ['id' => 4, 'component' => 'stats', 'data' => [
+                    'eyebrow' => 'الأرقام',
+                    'title'   => 'نمو قابل للقياس',
+                    'stats'   => [
+                        ['value' => '1.2 مليار', 'label' => 'ريال حجم التمويل المعالج'],
+                        ['value' => '320',       'label' => 'عميل نشط من الشركات'],
+                        ['value' => '60 ثانية',  'label' => 'متوسط زمن القرار'],
+                        ['value' => '97٪',       'label' => 'نسبة السداد في الوقت'],
+                    ],
+                    'caption' => 'حتى الربع الرابع 2025',
+                ]],
+                ['id' => 5, 'component' => 'features', 'data' => [
+                    'eyebrow'  => 'الميزات',
+                    'title'    => 'كل ما تحتاجه الشركة في مكان واحد',
+                    'features' => [
+                        ['icon' => '⚡', 'title' => 'قرار سريع',    'desc' => 'ذكاء اصطناعي يقرأ الفاتورة ويُصدر قراراً مبدئياً في 60 ثانية.'],
+                        ['icon' => '🔒', 'title' => 'تقييم دقيق',    'desc' => 'نماذج مدربة على 4 ملايين نقطة بيانات إقليمية.'],
+                        ['icon' => '🤝', 'title' => 'شركاء موثوقون', 'desc' => 'شبكة من 18 ممولاً مؤسسياً معتمداً.'],
+                    ],
+                ]],
+                ['id' => 6, 'component' => 'traction', 'data' => [
+                    'eyebrow' => 'الزخم',
+                    'title'   => 'نمو 8 أضعاف خلال 12 شهراً',
+                    'body'    => 'من 4 ملايين ريال في الربع الأول إلى 32 مليون ريال في الربع الأخير، مع توسع في 6 أسواق جديدة.',
+                ]],
+                ['id' => 7, 'component' => 'ask', 'data' => [
+                    'eyebrow' => 'الطلب',
+                    'title'   => 'نجمع 40 مليون ريال',
+                    'body'    => 'لتوسيع المنتجات في الإمارات والمملكة، وبناء فريق الهندسة في القاهرة.',
+                ]],
+                ['id' => 8, 'component' => 'closing', 'data' => [
+                    'eyebrow' => 'تواصل',
+                    'title'   => 'لنبنِ معاً مستقبل التمويل',
+                    'cta'     => 'hello@nimla.sa',
+                    'footer'  => $owner->name.' — السلسلة أ — 2026',
+                ]],
+            ],
+        ];
+
+        return json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    }
+
+    private function slideArabicCover(): string
+    {
+        return <<<'HTML'
+        <!-- Component: cover (RTL). Fields: title, subtitle, author, date. -->
+        <section class="mgf-slide" dir="rtl">
+          <p class="mgf-eyebrow" data-field="author">فريق المشروع</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h1 class="mgf-title-xl mgf-mt-md" data-field="title">اسم المشروع</h1>
+          <p class="mgf-subtitle mgf-mt-md" data-field="subtitle">وصف المشروع في سطر واحد.</p>
+          <div class="mgf-flex mgf-gap-md mgf-mt-lg">
+            <p class="mgf-label" data-field="date">السلسلة أ — 2026</p>
+          </div>
+          <p class="mgf-slide-number" data-field="id">٠١</p>
+        </section>
+        HTML;
+    }
+
+    private function slideArabicProblem(): string
+    {
+        return <<<'HTML'
+        <!-- Component: problem (RTL). Fields: eyebrow, title, body, points[]. -->
+        <section class="mgf-slide" dir="rtl">
+          <p class="mgf-eyebrow" data-field="eyebrow">المشكلة</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">عنوان المشكلة</h2>
+          <p class="mgf-body mgf-mt-md" data-field="body">فقرة واحدة تصف الألم. الحد الأقصى 40 كلمة.</p>
+          <ul class="mgf-list mgf-mt-lg" data-field="points">
+            <li>النقطة الأولى الداعمة</li>
+            <li>النقطة الثانية الداعمة</li>
+            <li>النقطة الثالثة الداعمة</li>
+          </ul>
+          <p class="mgf-slide-number" data-field="id">٠٢</p>
+        </section>
+        HTML;
+    }
+
+    private function slideArabicSolution(): string
+    {
+        return <<<'HTML'
+        <!-- Component: solution (RTL, single-column variant).
+             Fields: eyebrow, title, body. -->
+        <section class="mgf-slide" dir="rtl">
+          <p class="mgf-eyebrow" data-field="eyebrow">الحل</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">عنوان الحل</h2>
+          <p class="mgf-subtitle mgf-mt-md" data-field="subtitle">سطر تأطير للحل.</p>
+          <p class="mgf-body mgf-mt-lg" data-field="body">فقرة تشرح كيف يحل المنتج المشكلة. حتى 40 كلمة.</p>
+          <p class="mgf-slide-number" data-field="id">٠٣</p>
+        </section>
+        HTML;
+    }
+
+    private function slideArabicStats(): string
+    {
+        return <<<'HTML'
+        <!-- Component: stats (RTL, 4-up). Fields: eyebrow, title, stats[], caption. -->
+        <section class="mgf-slide" dir="rtl">
+          <p class="mgf-eyebrow" data-field="eyebrow">الأرقام</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">نقاط القوة</h2>
+          <div class="mgf-stat-group mgf-mt-lg" data-field="stats">
+            <div class="mgf-card-accent">
+              <p class="mgf-stat-value" data-field="value">1.2 مليار</p>
+              <p class="mgf-stat-label" data-field="label">ريال حجم التمويل</p>
+            </div>
+            <div class="mgf-card-accent">
+              <p class="mgf-stat-value" data-field="value">320</p>
+              <p class="mgf-stat-label" data-field="label">عميل نشط</p>
+            </div>
+            <div class="mgf-card-accent">
+              <p class="mgf-stat-value" data-field="value">60 ثانية</p>
+              <p class="mgf-stat-label" data-field="label">زمن القرار</p>
+            </div>
+            <div class="mgf-card-accent">
+              <p class="mgf-stat-value" data-field="value">97٪</p>
+              <p class="mgf-stat-label" data-field="label">نسبة السداد</p>
+            </div>
+          </div>
+          <p class="mgf-caption mgf-mt-md" data-field="caption">حتى الربع الرابع 2025</p>
+          <p class="mgf-slide-number" data-field="id">٠٤</p>
+        </section>
+        HTML;
+    }
+
+    private function slideArabicFeatures(): string
+    {
+        return <<<'HTML'
+        <!-- Component: features (RTL, 3-up). Fields: eyebrow, title, features[]. -->
+        <section class="mgf-slide" dir="rtl">
+          <p class="mgf-eyebrow" data-field="eyebrow">الميزات</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">ثلاث ركائز</h2>
+          <div class="mgf-grid-3 mgf-mt-lg" data-field="features">
+            <div class="mgf-card">
+              <div class="mgf-feature-icon" data-field="icon">⚡</div>
+              <p class="mgf-feature-title" data-field="title">قرار سريع</p>
+              <p class="mgf-feature-desc" data-field="desc">ذكاء اصطناعي في 60 ثانية.</p>
+            </div>
+            <div class="mgf-card">
+              <div class="mgf-feature-icon" data-field="icon">🔒</div>
+              <p class="mgf-feature-title" data-field="title">تقييم دقيق</p>
+              <p class="mgf-feature-desc" data-field="desc">نماذج مدربة على بيانات إقليمية.</p>
+            </div>
+            <div class="mgf-card">
+              <div class="mgf-feature-icon" data-field="icon">🤝</div>
+              <p class="mgf-feature-title" data-field="title">شركاء موثوقون</p>
+              <p class="mgf-feature-desc" data-field="desc">18 ممولاً مؤسسياً.</p>
+            </div>
+          </div>
+          <p class="mgf-slide-number" data-field="id">٠٥</p>
+        </section>
+        HTML;
+    }
+
+    private function slideArabicTraction(): string
+    {
+        return <<<'HTML'
+        <!-- Component: traction (RTL, single-column narrative).
+             Fields: eyebrow, title, body. -->
+        <section class="mgf-slide" dir="rtl">
+          <p class="mgf-eyebrow" data-field="eyebrow">الزخم</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">نمو 8 أضعاف</h2>
+          <p class="mgf-body mgf-mt-md" data-field="body">
+            من 4 ملايين ريال في الربع الأول إلى 32 مليون ريال في الربع الأخير،
+            مع توسع في 6 أسواق جديدة ونمو 38٪ في معدل الاحتفاظ.
+          </p>
+          <p class="mgf-slide-number" data-field="id">٠٦</p>
+        </section>
+        HTML;
+    }
+
+    private function slideArabicAsk(): string
+    {
+        return <<<'HTML'
+        <!-- Component: ask (RTL, centered).
+             Fields: eyebrow, title, body. -->
+        <section class="mgf-slide mgf-flex mgf-flex-center" dir="rtl">
+          <div class="mgf-text-center" style="max-width: 880px">
+            <p class="mgf-eyebrow" data-field="eyebrow">الطلب</p>
+            <div class="mgf-accent-bar mgf-mt-sm" style="margin-right:auto; margin-left:auto"></div>
+            <h2 class="mgf-title-xl mgf-mt-md" data-field="title">نجمع 40 مليون ريال</h2>
+            <p class="mgf-subtitle mgf-mt-md" data-field="body">فقرة توضح كيف سيُستخدم التمويل.</p>
+            <p class="mgf-slide-number" data-field="id">٠٧</p>
+          </div>
+        </section>
+        HTML;
+    }
+
+    private function slideArabicClosing(): string
+    {
+        return <<<'HTML'
+        <!-- Component: closing (RTL, centered CTA).
+             Fields: eyebrow, title, cta, footer. -->
+        <section class="mgf-slide mgf-flex mgf-flex-center" dir="rtl">
+          <div class="mgf-text-center" style="max-width: 720px">
+            <p class="mgf-eyebrow" data-field="eyebrow">تواصل</p>
+            <div class="mgf-accent-bar mgf-mt-sm" style="margin-right:auto; margin-left:auto"></div>
+            <h2 class="mgf-title-xl mgf-mt-md" data-field="title">لنبنِ معاً</h2>
+            <a class="mgf-cta-solid mgf-mt-lg" href="#" data-field="cta_url" data-label-field="cta">hello@nimla.sa</a>
+            <p class="mgf-caption mgf-mt-md" data-field="footer">السلسلة أ — 2026</p>
+          </div>
+          <p class="mgf-slide-number" data-field="id">٠٨</p>
+        </section>
+        HTML;
+    }
+
+    // ====================================================================
+    //  Infographic archetype (6 slides, editorial, cream + copper + serif)
+    // ====================================================================
+
+    /**
+     * Infographic archetype — a 6-slide report-style deck.
+     *
+     * Distinct from the pitch archetype in three ways:
+     * - Editorial typography (Playfair Display headlines, Source Serif
+     *   body) instead of sans.
+     * - Warm cream paper background + copper accent instead of dark
+     *   navy + electric blue.
+     * - Output target is `infographic-deck` (data-heavy, less marketing
+     *   language) instead of `presentation-deck`.
+     *
+     * 6 slides: cover · by-the-numbers · where · outcomes · finance ·
+     * thanks. Reuses the existing `cover`, `stats`, and `closing`
+     * slide bodies from the LTR pitch/summary — that is a feature,
+     * not an omission: the renderer maps data to the same component
+     * shapes across archetypes.
+     */
+    protected function infographicFiles($owner): array
+    {
+        return [
+            ['layer' => 'meta',    'name' => 'meta.md',     'extension' => 'md',   'content' => "# {$owner->name}\n\n{$owner->description}"],
+            ['layer' => 'context', 'name' => 'context.md',  'extension' => 'md',   'content' => $this->infographicContext()],
+            ['layer' => 'rules',   'name' => 'rules.md',    'extension' => 'md',   'content' => $this->rulesFor('infographic')],
+            ['layer' => 'style',   'name' => 'style.css',   'extension' => 'css',  'content' => $this->infographicStyleCss()],
+            ['layer' => 'layout',  'name' => 'layout.css',  'extension' => 'css',  'content' => $this->layoutCss16x9()],
+            ['layer' => 'content', 'name' => 'data.json',   'extension' => 'json', 'content' => $this->infographicDataJson($owner)],
+
+            ['layer' => 'slide', 'name' => 'slide-01.html', 'extension' => 'html', 'content' => $this->slideCover()],
+            ['layer' => 'slide', 'name' => 'slide-02.html', 'extension' => 'html', 'content' => $this->slideStatsFourUp()],
+            ['layer' => 'slide', 'name' => 'slide-03.html', 'extension' => 'html', 'content' => $this->slideInfographicNarrative()],
+            ['layer' => 'slide', 'name' => 'slide-04.html', 'extension' => 'html', 'content' => $this->slideStats()],
+            ['layer' => 'slide', 'name' => 'slide-05.html', 'extension' => 'html', 'content' => $this->slideInfographicFinance()],
+            ['layer' => 'slide', 'name' => 'slide-06.html', 'extension' => 'html', 'content' => $this->slideClosing()],
+        ];
+    }
+
+    private function infographicContext(): string
+    {
+        return <<<MD
+        # Project Context
+
+        ## Purpose
+        Annual / impact / explainer report. Editorial tone, evidence-led.
+
+        ## Audience
+        Readers who need the numbers and the story without reading a
+        full report.
+
+        ## Brand voice
+        Measured, transparent, citation-friendly. Always cite sources
+        in captions.
+
+        ## Visual constraints
+        - Palette: paper-cream + deep navy ink + copper accent
+        - Typography: Playfair Display headlines, Source Serif body
+        - Tables and bullet lists preferred over dense prose
+        - One core idea per slide
+        MD;
+    }
+
+    private function infographicStyleCss(): string
+    {
+        return <<<'CSS'
+        /* style.css — Infographic archetype.
+           Editorial / print-feel: paper-cream background, deep navy
+           ink, single warm copper accent. Serif type everywhere.
+           Inspired by high-quality annual reports. */
+        :root {
+          --mgf-color-bg:            #f6f1e7;
+          --mgf-color-surface:       #ffffff;
+          --mgf-color-surface-2:     #ede5d3;
+          --mgf-color-border:        rgba(14, 26, 44, 0.10);
+          --mgf-color-border-strong: #0e1a2c;
+          --mgf-color-text-primary:  #0e1a2c;
+          --mgf-color-text-secondary:#4a5567;
+          --mgf-color-text-inverse:  #ffffff;
+          --mgf-color-accent:        #b46a3a;
+          --mgf-color-accent-soft:   rgba(180, 106, 58, 0.10);
+          --mgf-color-accent-2:      #0e1a2c;
+
+          --mgf-font-display: 'Playfair Display', Georgia, serif;
+          --mgf-font-body:    'Source Serif 4', Georgia, serif;
+          --mgf-font-mono:    'JetBrains Mono', ui-monospace, monospace;
+
+          --mgf-text-xs:   0.75rem;
+          --mgf-text-sm:   0.875rem;
+          --mgf-text-base: 1rem;
+          --mgf-text-lg:   1.25rem;
+          --mgf-text-xl:   1.5rem;
+          --mgf-text-2xl:  2rem;
+          --mgf-text-3xl:  2.75rem;
+          --mgf-text-4xl:  4rem;
+          --mgf-weight-medium: 500;
+          --mgf-weight-bold:   700;
+          --mgf-leading-tight:  1.2;
+          --mgf-leading-normal: 1.6;
+          --mgf-leading-loose:  1.75;
+          --mgf-tracking-tight:  -0.01em;
+          --mgf-tracking-normal: 0em;
+          --mgf-tracking-wide:   0.04em;
+
+          --mgf-space-1:  0.25rem;
+          --mgf-space-2:  0.5rem;
+          --mgf-space-3:  0.75rem;
+          --mgf-space-4:  1rem;
+          --mgf-space-6:  1.5rem;
+          --mgf-space-8:  2rem;
+          --mgf-space-12: 3rem;
+          --mgf-space-16: 4rem;
+          --mgf-space-24: 6rem;
+
+          --mgf-radius-sm: 2px;
+          --mgf-radius-md: 4px;
+          --mgf-radius-lg: 8px;
+          --mgf-radius-xl: 12px;
+
+          --mgf-slide-w:     1280px;
+          --mgf-slide-h:     720px;
+          --mgf-slide-pad-x: 88px;
+          --mgf-slide-pad-y: 64px;
+
+          --mgf-accent-line: 4px solid var(--mgf-color-accent);
+          --mgf-divider:     1px solid var(--mgf-color-border);
+        }
+        CSS;
+    }
+
+    private function infographicDataJson($owner): string
+    {
+        $payload = [
+            '_meta' => [
+                'project' => $owner->name,
+                'version' => '1.0',
+                'output_target' => 'infographic-deck',
+                'format' => '16:9',
+                'language' => 'en',
+                'direction' => 'ltr',
+                'total_slides' => 6,
+                'components_used' => [
+                    'cover', 'stats', 'narrative', 'stats',
+                    'infographic-finance', 'closing',
+                ],
+            ],
+            'slides' => [
+                ['id' => 1, 'component' => 'cover', 'data' => [
+                    'title'    => $owner->name,
+                    'subtitle' => $owner->description,
+                    'author'   => $owner->name.' team',
+                    'date'     => '2026 impact report',
+                ]],
+                ['id' => 2, 'component' => 'stats', 'data' => [
+                    'eyebrow' => 'By the numbers',
+                    'title'   => 'What 2025 looked like',
+                    'stats'   => [
+                        ['value' => '1,240', 'label' => 'scholarships funded'],
+                        ['value' => '37',    'label' => 'partner schools'],
+                        ['value' => '$4.8M', 'label' => 'disbursed in grants'],
+                        ['value' => '92%',   'label' => 'students still enrolled'],
+                    ],
+                    'caption' => 'Aggregated across all 37 partner schools, 2025 cohort.',
+                ]],
+                ['id' => 3, 'component' => 'narrative', 'data' => [
+                    'eyebrow' => 'Where we work',
+                    'title'   => '37 schools across 4 regions',
+                    'body'    => 'Atlas concentrates on the lowest-decile school districts in the Levant and North Africa, where one scholarship moves the needle for the entire cohort.',
+                ]],
+                ['id' => 4, 'component' => 'stats', 'data' => [
+                    'eyebrow' => 'Outcomes',
+                    'title'   => 'The numbers that matter most',
+                    'stats'   => [
+                        ['value' => '78%',  'label' => 'finish secondary school'],
+                        ['value' => '31%',  'label' => 'go on to tertiary education'],
+                        ['value' => '1.4x', 'label' => 'earnings uplift vs control'],
+                    ],
+                    'caption' => 'Source: 2025 longitudinal survey, n=812.',
+                ]],
+                ['id' => 5, 'component' => 'infographic-finance', 'data' => [
+                    'eyebrow' => 'Finance',
+                    'title'   => 'Every dollar accounted for',
+                    'body'    => '86¢ of every donated dollar went directly to scholars. 9¢ to program support, 5¢ to fundraising and overhead.',
+                ]],
+                ['id' => 6, 'component' => 'closing', 'data' => [
+                    'eyebrow' => 'Thank you',
+                    'title'   => 'To our 1,800 donors',
+                    'body'    => 'The 2025 cohort exists because of you. Applications for 2026 open in May.',
+                    'cta'     => 'Read the full report',
+                    'footer'  => 'Published April 2026',
+                ]],
+            ],
+        ];
+
+        return json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    }
+
+    /**
+     * Component: narrative — single-column editorial slide.
+     *
+     * Reused by the infographic archetype for "where we work" and
+     * by the website archetype for long-band sections of prose.
+     * Distinct from `slideInfographicFinance` only by caption
+     * placement and the body-text fill.
+     */
+    private function slideInfographicNarrative(): string
+    {
+        return <<<'HTML'
+        <!-- Component: narrative (editorial).
+             Fields: eyebrow, title, body.
+             Layout: centered eyebrow + title + 2-column body prose. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="eyebrow">Where</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">Where we work</h2>
+          <p class="mgf-subtitle mgf-mt-md" data-field="body" style="max-width: 880px">
+            One paragraph of editorial prose, max 60 words.
+          </p>
+          <p class="mgf-slide-number" data-field="id">03</p>
+        </section>
+        HTML;
+    }
+
+    /**
+     * Component: infographic-finance — a single-stat-block slide with
+     * inline allocation bars. Distinct from stats because the layout
+     * is editorial vertical, not a 4-up grid.
+     */
+    private function slideInfographicFinance(): string
+    {
+        return <<<'HTML'
+        <!-- Component: infographic-finance (allocation breakdown).
+             Fields: eyebrow, title, body.
+             Layout: full-width editorial block, prose-only. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="eyebrow">Finance</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">Every dollar accounted for</h2>
+          <p class="mgf-subtitle mgf-mt-md" data-field="body" style="max-width: 880px">
+            One paragraph explaining the allocation breakdown.
+          </p>
+          <p class="mgf-slide-number" data-field="id">05</p>
+        </section>
+        HTML;
+    }
+
+    // ====================================================================
+    //  Academic-math archetype (6 slides, KaTeX-heavy)
+    //  Primary purpose: verify the math.md contract end-to-end.
+    //  Uses <span class="math-inline"> + <div class="math-block"> with
+    //  double-escaped backslashes in data-tex (nowdoc heredoc keeps
+    //  \\frac literal in the HTML output, which is what KaTeX expects).
+    // ====================================================================
+
+    protected function academicMathFiles($owner): array
+    {
+        return [
+            ['layer' => 'meta',    'name' => 'meta.md',     'extension' => 'md',   'content' => "# {$owner->name}\n\n{$owner->description}"],
+            ['layer' => 'context', 'name' => 'context.md',  'extension' => 'md',   'content' => $this->academicMathContext()],
+            ['layer' => 'rules',   'name' => 'rules.md',    'extension' => 'md',   'content' => $this->rulesFor('academic-math')],
+            ['layer' => 'style',   'name' => 'style.css',   'extension' => 'css',  'content' => $this->academicMathStyleCss()],
+            ['layer' => 'layout',  'name' => 'layout.css',  'extension' => 'css',  'content' => $this->layoutCss16x9()],
+            ['layer' => 'content', 'name' => 'data.json',   'extension' => 'json', 'content' => $this->academicMathDataJson($owner)],
+
+            ['layer' => 'slide', 'name' => 'slide-01.html', 'extension' => 'html', 'content' => $this->slideAcademicCover()],
+            ['layer' => 'slide', 'name' => 'slide-02.html', 'extension' => 'html', 'content' => $this->slideAcademicQuadratic()],
+            ['layer' => 'slide', 'name' => 'slide-03.html', 'extension' => 'html', 'content' => $this->slideAcademicSchrodinger()],
+            ['layer' => 'slide', 'name' => 'slide-04.html', 'extension' => 'html', 'content' => $this->slideAcademicEuler()],
+            ['layer' => 'slide', 'name' => 'slide-05.html', 'extension' => 'html', 'content' => $this->slideAcademicCalculus()],
+            ['layer' => 'slide', 'name' => 'slide-06.html', 'extension' => 'html', 'content' => $this->slideAcademicClosing()],
+        ];
+    }
+
+    private function academicMathContext(): string
+    {
+        return <<<MD
+        # Project Context
+
+        ## Purpose
+        A reference deck for verifying the KaTeX math integration.
+        Every math-containing slide tests at least one inline span and
+        one block-level formula so that the renderer's
+        `hasMathContent(bodyHtml)` regex finds a match and the
+        KaTeX asset injection fires.
+
+        ## Audience
+        Engineers reviewing the math render path; reviewers who want
+        to see all common LaTeX primitives (fractions, roots, sums,
+        integrals, matrices) without leaving the editor.
+
+        ## Brand voice
+        Quiet, scholarly, citation-friendly.
+
+        ## Visual constraints
+        - Palette: paper-cream + forest-green accent + charcoal ink
+        - Typography: Source Serif 4 for prose, JetBrains Mono for
+          inline math/equations identifiers
+        - Every formula MUST be wrapped in either
+          `<span class="math-inline" data-tex="..."></span>` or
+          `<div class="math-block" data-tex="..."></div>`. Naked
+          `\$...\$` delimiters are NOT parsed.
+        - Backslashes must be doubled (`\\\\frac`) so the JSON/HTML
+          round-trip leaves a single `\\` for KaTeX to parse.
+        MD;
+    }
+
+    private function academicMathStyleCss(): string
+    {
+        return <<<'CSS'
+        /* style.css — Academic / KaTeX reference archetype.
+           Paper-cream background + forest-green accent + charcoal
+           ink. Serif for prose, mono for code/identifiers. The
+           assembler injects MATH_THEMED_CSS so .katex re-tints to
+           var(--mgf-color-text-primary) automatically. */
+        :root {
+          --mgf-color-bg:            #f7f3e9;
+          --mgf-color-surface:       #ffffff;
+          --mgf-color-surface-2:     #ece4cf;
+          --mgf-color-border:        rgba(26, 36, 33, 0.10);
+          --mgf-color-border-strong: #1a2421;
+          --mgf-color-text-primary:  #1a2421;
+          --mgf-color-text-secondary:#5a665e;
+          --mgf-color-text-inverse:  #ffffff;
+          --mgf-color-accent:        #1f6f4a;
+          --mgf-color-accent-soft:   rgba(31, 111, 74, 0.10);
+          --mgf-color-accent-2:      #b67d3e;
+
+          --mgf-font-display: 'Source Serif 4', Georgia, serif;
+          --mgf-font-body:    'Inter', system-ui, sans-serif;
+          --mgf-font-mono:    'JetBrains Mono', ui-monospace, monospace;
+
+          --mgf-text-xs:   0.75rem;
+          --mgf-text-sm:   0.875rem;
+          --mgf-text-base: 1rem;
+          --mgf-text-lg:   1.125rem;
+          --mgf-text-xl:   1.5rem;
+          --mgf-text-2xl:  2rem;
+          --mgf-text-3xl:  2.75rem;
+          --mgf-text-4xl:  4rem;
+
+          --mgf-weight-normal: 400;
+          --mgf-weight-medium: 500;
+          --mgf-weight-bold:   700;
+
+          --mgf-leading-tight:  1.2;
+          --mgf-leading-normal: 1.55;
+          --mgf-leading-loose:  1.75;
+
+          --mgf-tracking-tight:  -0.01em;
+          --mgf-tracking-normal: 0em;
+          --mgf-tracking-wide:   0.06em;
+
+          --mgf-space-1:  0.25rem;
+          --mgf-space-2:  0.5rem;
+          --mgf-space-3:  0.75rem;
+          --mgf-space-4:  1rem;
+          --mgf-space-6:  1.5rem;
+          --mgf-space-8:  2rem;
+          --mgf-space-12: 3rem;
+          --mgf-space-16: 4rem;
+          --mgf-space-24: 6rem;
+
+          --mgf-radius-sm: 2px;
+          --mgf-radius-md: 4px;
+          --mgf-radius-lg: 8px;
+          --mgf-radius-xl: 12px;
+
+          --mgf-slide-w:     1280px;
+          --mgf-slide-h:     720px;
+          --mgf-slide-pad-x: 96px;
+          --mgf-slide-pad-y: 72px;
+
+          --mgf-accent-line: 3px solid var(--mgf-color-accent);
+          --mgf-divider:     1px solid var(--mgf-color-border);
+        }
+        CSS;
+    }
+
+    private function academicMathDataJson($owner): string
+    {
+        $payload = [
+            '_meta' => [
+                'project' => $owner->name,
+                'version' => '1.0',
+                'output_target' => 'presentation-deck',
+                'format' => '16:9',
+                'language' => 'en',
+                'direction' => 'ltr',
+                'total_slides' => 6,
+                'components_used' => [
+                    'cover', 'math-quadratic', 'math-schrodinger',
+                    'math-euler', 'math-calculus', 'closing',
+                ],
+            ],
+            'slides' => [
+                ['id' => 1, 'component' => 'cover', 'data' => [
+                    'title' => $owner->name,
+                    'subtitle' => $owner->description,
+                    'author' => 'Editorial math review',
+                    'date' => 'v1.0 — August 2026',
+                ]],
+                ['id' => 2, 'component' => 'math-quadratic', 'data' => [
+                    'eyebrow' => 'Algebra',
+                    'title' => 'The quadratic formula',
+                    'caption' => 'Roots of ax² + bx + c = 0',
+                ]],
+                ['id' => 3, 'component' => 'math-schrodinger', 'data' => [
+                    'eyebrow' => 'Quantum mechanics',
+                    'title' => 'Time-dependent Schrödinger equation',
+                    'caption' => 'Evolution of a quantum state',
+                ]],
+                ['id' => 4, 'component' => 'math-euler', 'data' => [
+                    'eyebrow' => 'Complex analysis',
+                    'title' => "Euler's identity",
+                    'caption' => 'Often called the most beautiful equation',
+                ]],
+                ['id' => 5, 'component' => 'math-calculus', 'data' => [
+                    'eyebrow' => 'Calculus',
+                    'title' => 'Derivative and integral',
+                    'caption' => 'The fundamental theorem, side by side',
+                ]],
+                ['id' => 6, 'component' => 'closing', 'data' => [
+                    'eyebrow' => 'References',
+                    'title' => 'KaTeX supported functions',
+                    'body' => 'katex.org/docs/supported_functions',
+                    'cta' => 'Open in editor',
+                    'footer' => 'Reference deck for math render verification',
+                ]],
+            ],
+        ];
+
+        return json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    }
+
+    /**
+     * Cover slide for the academic-math archetype.
+     * Includes one inline math as a teaser so the math-asset
+     * injection kicks in even before the dedicated math slides.
+     * Backslashes in data-tex are intentionally doubled per math.md.
+     */
+    private function slideAcademicCover(): string
+    {
+        return <<<'HTML'
+        <!-- Component: cover (academic-math).
+             Inline math teaser so the renderer detects math on slide 1.
+             Fields: title, subtitle, author, date. -->
+        <section class="mgf-slide mgf-flex mgf-flex-center">
+          <div class="mgf-text-center" style="max-width: 880px">
+            <p class="mgf-eyebrow" data-field="author">Editorial math review</p>
+            <div class="mgf-accent-bar mgf-mt-sm" style="margin-right:auto; margin-left:auto"></div>
+            <h1 class="mgf-title-xl mgf-mt-md" data-field="title">KaTeX reference deck</h1>
+            <p class="mgf-subtitle mgf-mt-md" data-field="subtitle">
+              Verifying inline and block math across the MGF renderer.
+            </p>
+            <p class="mgf-body mgf-mt-lg">
+              A famous identity:
+              <span class="math-inline" data-tex="e^{i\pi} + 1 = 0"></span>.
+            </p>
+            <p class="mgf-caption mgf-mt-md" data-field="date">v1.0 — August 2026</p>
+          </div>
+          <p class="mgf-slide-number" data-field="id">01</p>
+        </section>
+        HTML;
+    }
+
+    /**
+     * Quadratic formula slide — one math-block + one math-inline
+     * in the caption. Tests fractions, square roots, plus/minus.
+     * Backslashes in data-tex are doubled per math.md.
+     */
+    private function slideAcademicQuadratic(): string
+    {
+        return <<<'HTML'
+        <!-- Component: math-quadratic.
+             Tests: \\frac, \\sqrt, \\pm in a math-block + math-inline. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="eyebrow">Algebra</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">The quadratic formula</h2>
+          <div class="math-block mgf-mt-lg" data-tex="x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}"></div>
+          <p class="mgf-caption mgf-text-center mgf-mt-md" data-field="caption">
+            For the equation
+            <span class="math-inline" data-tex="ax^2 + bx + c = 0"></span>
+            with
+            <span class="math-inline" data-tex="a \\neq 0"></span>.
+          </p>
+          <p class="mgf-slide-number" data-field="id">02</p>
+        </section>
+        HTML;
+    }
+
+    /**
+     * Schrödinger equation slide — large block + multiple inline
+     * spans. Tests Greek letters, partial derivatives, hat operators,
+     * bold vectors. Backslashes doubled per math.md.
+     */
+    private function slideAcademicSchrodinger(): string
+    {
+        return <<<'HTML'
+        <!-- Component: math-schrodinger.
+             Tests: Greek (\\Psi, \\hbar), \\partial, \\hat, \\nabla, \\mathbf. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="eyebrow">Quantum mechanics</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">Time-dependent Schrödinger equation</h2>
+          <p class="mgf-body mgf-mt-md">
+            The wave function
+            <span class="math-inline" data-tex="\\Psi(\\mathbf{r}, t)"></span>
+            evolves under the Hamiltonian operator
+            <span class="math-inline" data-tex="\\hat{H}"></span>.
+          </p>
+          <div class="math-block mgf-mt-lg" data-tex="i\\hbar \\frac{\\partial}{\\partial t} \\Psi = \\hat{H} \\Psi"></div>
+          <div class="math-block mgf-mt-sm" data-tex="\\hat{H} = -\\frac{\\hbar^2}{2m}\\nabla^2 + V(\\mathbf{r})"></div>
+          <p class="mgf-caption mgf-mt-md" data-field="caption">Evolution of a quantum state in time.</p>
+          <p class="mgf-slide-number" data-field="id">03</p>
+        </section>
+        HTML;
+    }
+
+    /**
+     * Euler's identity slide — single block + rich inline.
+     * Tests: e^x, i, \pi, =, +, complex constant combination.
+     * Backslashes doubled per math.md.
+     */
+    private function slideAcademicEuler(): string
+    {
+        return <<<'HTML'
+        <!-- Component: math-euler.
+             Tests: e^{...}, i, \\pi, summation of five constants. -->
+        <section class="mgf-slide mgf-flex mgf-flex-center">
+          <div class="mgf-text-center" style="max-width: 920px">
+            <p class="mgf-eyebrow" data-field="eyebrow">Complex analysis</p>
+            <div class="mgf-accent-bar mgf-mt-sm" style="margin-right:auto; margin-left:auto"></div>
+            <h2 class="mgf-title-lg mgf-mt-md" data-field="title">Euler's identity</h2>
+            <div class="math-block mgf-mt-lg" data-tex="e^{i\\pi} + 1 = 0"></div>
+            <p class="mgf-body mgf-mt-md" data-field="caption">
+              Five fundamental constants — additive identity
+              <span class="math-inline" data-tex="0"></span>,
+              multiplicative identity
+              <span class="math-inline" data-tex="1"></span>,
+              the base of natural log
+              <span class="math-inline" data-tex="e"></span>,
+              the imaginary unit
+              <span class="math-inline" data-tex="i"></span>,
+              and pi
+              <span class="math-inline" data-tex="\\pi"></span> — in one equation.
+            </p>
+          </div>
+          <p class="mgf-slide-number" data-field="id">04</p>
+        </section>
+        HTML;
+    }
+
+    /**
+     * Calculus slide — two side-by-side math-blocks (derivative +
+     * integral) plus inline examples. Tests fractions, \mathrm
+     * for upright roman, summation, integral signs.
+     * Backslashes doubled per math.md.
+     */
+    private function slideAcademicCalculus(): string
+    {
+        return <<<'HTML'
+        <!-- Component: math-calculus.
+             Tests: \\frac, \\mathrm, \\sum, \\int with bounds, dx. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="eyebrow">Calculus</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">Derivative and integral</h2>
+          <div class="mgf-grid-2 mgf-mt-lg">
+            <div class="mgf-card">
+              <p class="mgf-eyebrow">Derivative</p>
+              <div class="math-block mgf-mt-md" data-tex="\\frac{\\mathrm{d}}{\\mathrm{d}x} f(x)"></div>
+              <p class="mgf-caption mgf-mt-sm">
+                The instantaneous rate of change of
+                <span class="math-inline" data-tex="f"></span>
+                with respect to
+                <span class="math-inline" data-tex="x"></span>.
+              </p>
+            </div>
+            <div class="mgf-card">
+              <p class="mgf-eyebrow">Integral</p>
+              <div class="math-block mgf-mt-md" data-tex="\\int_a^b f(x)\\, \\mathrm{d}x"></div>
+              <p class="mgf-caption mgf-mt-sm">
+                Accumulated change of
+                <span class="math-inline" data-tex="f"></span>
+                over
+                <span class="math-inline" data-tex="[a, b]"></span>.
+              </p>
+            </div>
+          </div>
+          <div class="math-block mgf-mt-lg" data-tex="\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}"></div>
+          <p class="mgf-caption mgf-text-center mgf-mt-md" data-field="caption">
+            The fundamental theorem: differentiation and integration are inverses.
+          </p>
+          <p class="mgf-slide-number" data-field="id">05</p>
+        </section>
+        HTML;
+    }
+
+    /**
+     * Closing slide — matrix test in a math-block (tests \begin/\end,
+     * & column separator, \\ row separator). All backslashes
+     * doubled per the math.md contract.
+     */
+    private function slideAcademicClosing(): string
+    {
+        return <<<'HTML'
+        <!-- Component: closing (academic-math).
+             Tests: \\begin{matrix} ... \\end{matrix}, & column sep,
+             \\\\ row sep (two backslashes is one row break in
+             LaTeX — see math.md). -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="eyebrow">References</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">KaTeX supported functions</h2>
+          <div class="math-block mgf-mt-lg" data-tex="\\begin{matrix} a & b \\\\ c & d \\end{matrix}"></div>
+          <p class="mgf-body mgf-mt-md" data-field="body">
+            The render hook runs KaTeX with
+            <span class="math-inline" data-tex="\\texttt{throwOnError: false}"></span>
+            and
+            <span class="math-inline" data-tex="\\texttt{strict: 'ignore'}"></span>.
+            A broken formula shows the source text in red and adds
+            <span class="math-inline" data-tex="\\texttt{data-math-error}"></span>.
+          </p>
+          <p class="mgf-caption mgf-mt-md" data-field="footer">
+            Reference deck — katex.org/docs/supported_functions
+          </p>
+          <p class="mgf-slide-number" data-field="id">06</p>
+        </section>
+        HTML;
+    }
+
+    // ====================================================================
+    //  Earth-organic archetype (8 slides, climate/sustainability pitch)
+    //  Sand + olive green + clay. Serif display + sans body. Distinct
+    //  from the LTR pitch by its earthy palette and warm serif headings.
+    // ====================================================================
+
+    protected function earthOrganicFiles($owner): array
+    {
+        return [
+            ['layer' => 'meta',    'name' => 'meta.md',     'extension' => 'md',   'content' => "# {$owner->name}\n\n{$owner->description}"],
+            ['layer' => 'context', 'name' => 'context.md',  'extension' => 'md',   'content' => $this->earthOrganicContext()],
+            ['layer' => 'rules',   'name' => 'rules.md',    'extension' => 'md',   'content' => $this->rulesFor('earth-organic')],
+            ['layer' => 'style',   'name' => 'style.css',   'extension' => 'css',  'content' => $this->earthOrganicStyleCss()],
+            ['layer' => 'layout',  'name' => 'layout.css',  'extension' => 'css',  'content' => $this->layoutCss16x9()],
+            ['layer' => 'content', 'name' => 'data.json',   'extension' => 'json', 'content' => $this->earthOrganicDataJson($owner)],
+
+            ['layer' => 'slide', 'name' => 'slide-01.html', 'extension' => 'html', 'content' => $this->slideEarthCover()],
+            ['layer' => 'slide', 'name' => 'slide-02.html', 'extension' => 'html', 'content' => $this->slideEarthProblem()],
+            ['layer' => 'slide', 'name' => 'slide-03.html', 'extension' => 'html', 'content' => $this->slideEarthSolution()],
+            ['layer' => 'slide', 'name' => 'slide-04.html', 'extension' => 'html', 'content' => $this->slideEarthStats()],
+            ['layer' => 'slide', 'name' => 'slide-05.html', 'extension' => 'html', 'content' => $this->slideEarthTimeline()],
+            ['layer' => 'slide', 'name' => 'slide-06.html', 'extension' => 'html', 'content' => $this->slideEarthFeatures()],
+            ['layer' => 'slide', 'name' => 'slide-07.html', 'extension' => 'html', 'content' => $this->slideEarthAsk()],
+            ['layer' => 'slide', 'name' => 'slide-08.html', 'extension' => 'html', 'content' => $this->slideEarthClosing()],
+        ];
+    }
+
+    private function earthOrganicContext(): string
+    {
+        return <<<MD
+        # Project Context
+
+        ## Purpose
+        Climate-tech / sustainability investor deck. Warm and grounded.
+
+        ## Audience
+        Climate-focused VCs, family offices with sustainability mandates.
+
+        ## Brand voice
+        Hopeful, evidence-led, slow-paced. No greenwashing.
+
+        ## Visual constraints
+        - Palette: sand + olive + clay
+        - Typography: Source Serif 4 display, Inter body
+        - Numbers matter — always cite a source
+        MD;
+    }
+
+    private function earthOrganicStyleCss(): string
+    {
+        return <<<'CSS'
+        :root {
+          --mgf-color-bg:            #f5efe1;
+          --mgf-color-surface:       #ede5cf;
+          --mgf-color-surface-2:     #d8cfb3;
+          --mgf-color-border:        rgba(62, 53, 30, 0.12);
+          --mgf-color-border-strong: #3e351e;
+          --mgf-color-text-primary:  #2d2818;
+          --mgf-color-text-secondary:#6b6347;
+          --mgf-color-text-inverse:  #ffffff;
+          --mgf-color-accent:        #5e7a3e;
+          --mgf-color-accent-soft:   rgba(94, 122, 62, 0.14);
+          --mgf-color-accent-2:      #b67d3e;
+
+          --mgf-font-display: 'Source Serif 4', Georgia, serif;
+          --mgf-font-body:    'Inter', system-ui, sans-serif;
+          --mgf-font-mono:    'JetBrains Mono', ui-monospace, monospace;
+
+          --mgf-text-xs:   0.75rem;
+          --mgf-text-sm:   0.9375rem;
+          --mgf-text-base: 1.0625rem;
+          --mgf-text-lg:   1.25rem;
+          --mgf-text-xl:   1.625rem;
+          --mgf-text-2xl:  2.25rem;
+          --mgf-text-3xl:  3.25rem;
+          --mgf-text-4xl:  4.5rem;
+
+          --mgf-weight-medium: 500;
+          --mgf-weight-bold:   700;
+          --mgf-leading-tight:  1.18;
+          --mgf-leading-normal: 1.55;
+          --mgf-leading-loose:  1.75;
+          --mgf-tracking-tight:  -0.015em;
+          --mgf-tracking-normal: 0em;
+          --mgf-tracking-wide:   0.06em;
+
+          --mgf-space-1:  0.25rem;
+          --mgf-space-2:  0.5rem;
+          --mgf-space-3:  0.75rem;
+          --mgf-space-4:  1rem;
+          --mgf-space-6:  1.5rem;
+          --mgf-space-8:  2rem;
+          --mgf-space-12: 3rem;
+          --mgf-space-16: 4rem;
+          --mgf-space-24: 6rem;
+
+          --mgf-radius-sm: 4px;
+          --mgf-radius-md: 10px;
+          --mgf-radius-lg: 18px;
+          --mgf-radius-xl: 26px;
+
+          --mgf-slide-w:     1280px;
+          --mgf-slide-h:     720px;
+          --mgf-slide-pad-x: 80px;
+          --mgf-slide-pad-y: 64px;
+
+          --mgf-accent-line: 3px solid var(--mgf-color-accent);
+          --mgf-divider:     1px solid var(--mgf-color-border);
+        }
+        CSS;
+    }
+
+    private function earthOrganicDataJson($owner): string
+    {
+        $payload = [
+            '_meta' => [
+                'project' => $owner->name,
+                'version' => '1.0',
+                'output_target' => 'presentation-deck',
+                'format' => '16:9',
+                'language' => 'en',
+                'direction' => 'ltr',
+                'total_slides' => 8,
+                'components_used' => [
+                    'cover', 'problem', 'solution', 'stats', 'timeline',
+                    'features', 'ask', 'closing',
+                ],
+            ],
+            'slides' => [
+                ['id' => 1, 'component' => 'cover', 'data' => [
+                    'title' => $owner->name,
+                    'subtitle' => $owner->description,
+                    'author' => $owner->name.' team',
+                    'date' => '2026 climate round',
+                ]],
+                ['id' => 2, 'component' => 'problem', 'data' => [
+                    'eyebrow' => 'The problem',
+                    'title' => 'A gigaton a year is no longer a target',
+                    'body' => 'Atmospheric CO2 crossed 425 ppm in 2024. Every additional gigaton we emit now costs more to remove than the gigaton before.',
+                    'points' => [
+                        '8 of the last 10 summers were the hottest on record',
+                        'Direct-air-capture costs still 4× higher than they need to be',
+                        'Land-based carbon sinks are saturating',
+                    ],
+                ]],
+                ['id' => 3, 'component' => 'solution', 'data' => [
+                    'eyebrow' => 'The approach',
+                    'title' => 'Mineralize CO2 in the rocks it came from',
+                    'body' => 'Our reactors accelerate the natural basalt-CO2 reaction by 10,000× — turning captured CO2 into stable carbonate rock in 18 months.',
+                ]],
+                ['id' => 4, 'component' => 'stats', 'data' => [
+                    'eyebrow' => 'By the numbers',
+                    'title' => 'Working at scale today',
+                    'stats' => [
+                        ['value' => '12,000', 'label' => 'tons / year capacity (Iceland)'],
+                        ['value' => '$320',   'label' => 'cost per ton, current'],
+                        ['value' => '94%',    'label' => 'verified removal'],
+                        ['value' => '18 mo',  'label' => 'to permanent mineralization'],
+                    ],
+                    'caption' => 'Independent verification by Carbonfuture, Q2 2026.',
+                ]],
+                ['id' => 5, 'component' => 'timeline', 'data' => [
+                    'eyebrow' => 'Roadmap',
+                    'title' => 'From 12kt to 1Mt',
+                    'steps' => [
+                        ['date' => '2024', 'label' => 'Pilot plant, Iceland'],
+                        ['date' => '2026', 'label' => 'First commercial site, Oman'],
+                        ['date' => '2028', 'label' => '100kt capacity, three sites'],
+                        ['date' => '2031', 'label' => '1Mt capacity, grid-scale'],
+                    ],
+                ]],
+                ['id' => 6, 'component' => 'features', 'data' => [
+                    'eyebrow' => 'Why us',
+                    'title' => 'Three advantages',
+                    'features' => [
+                        ['icon' => '🌋', 'title' => 'Local feedstock', 'desc' => 'Each plant uses regional basalt — no global mineral logistics.'],
+                        ['icon' => '⚡', 'title' => 'Renewable-only', 'desc' => 'Powered entirely by geothermal + wind, never the grid.'],
+                        ['icon' => '♻️', 'title' => 'Permanent', 'desc' => 'Carbonate rock is geologically stable for 100,000+ years.'],
+                    ],
+                ]],
+                ['id' => 7, 'component' => 'ask', 'data' => [
+                    'eyebrow' => 'The round',
+                    'title' => 'Raising $90M Series B',
+                    'body' => 'Three sites in Oman, Kenya, and the Philippines. Operational by 2029.',
+                ]],
+                ['id' => 8, 'component' => 'closing', 'data' => [
+                    'eyebrow' => 'Get in touch',
+                    'title' => 'The next gigaton starts with the next ton',
+                    'cta' => 'hello@loamgrid.earth',
+                    'footer' => $owner->name.' — Series B — 2026',
+                ]],
+            ],
+        ];
+
+        return json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    }
+
+    private function slideEarthCover(): string
+    {
+        return <<<'HTML'
+        <!-- Component: cover (earth-organic). Fields: title, subtitle, author, date. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="author">Team</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h1 class="mgf-title-xl mgf-mt-md" data-field="title">Project name</h1>
+          <p class="mgf-subtitle mgf-mt-md" data-field="subtitle">One sentence about the work.</p>
+          <p class="mgf-label mgf-mt-lg" data-field="date">2026 climate round</p>
+          <p class="mgf-slide-number" data-field="id">01</p>
+        </section>
+        HTML;
+    }
+
+    private function slideEarthProblem(): string
+    {
+        return <<<'HTML'
+        <!-- Component: problem (earth-organic). Fields: eyebrow, title, body, points[]. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="eyebrow">The problem</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">A problem framed for climate investors</h2>
+          <p class="mgf-body mgf-mt-md" data-field="body">A paragraph that anchors urgency without catastrophizing.</p>
+          <ul class="mgf-list mgf-mt-lg" data-field="points">
+            <li>First supporting point</li>
+            <li>Second supporting point</li>
+            <li>Third supporting point</li>
+          </ul>
+          <p class="mgf-slide-number" data-field="id">02</p>
+        </section>
+        HTML;
+    }
+
+    private function slideEarthSolution(): string
+    {
+        return <<<'HTML'
+        <!-- Component: solution (earth-organic). Fields: eyebrow, title, body. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="eyebrow">The approach</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">Approach headline</h2>
+          <p class="mgf-body mgf-mt-md" data-field="body">One paragraph explaining the technique and why it works at scale.</p>
+          <p class="mgf-slide-number" data-field="id">03</p>
+        </section>
+        HTML;
+    }
+
+    private function slideEarthStats(): string
+    {
+        return <<<'HTML'
+        <!-- Component: stats (earth-organic, 4-up). Fields: eyebrow, title, stats[], caption. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="eyebrow">By the numbers</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">Working at scale today</h2>
+          <div class="mgf-stat-group mgf-mt-lg" data-field="stats">
+            <div class="mgf-card-accent">
+              <p class="mgf-stat-value" data-field="value">12,000</p>
+              <p class="mgf-stat-label" data-field="label">tons / year</p>
+            </div>
+            <div class="mgf-card-accent">
+              <p class="mgf-stat-value" data-field="value">$320</p>
+              <p class="mgf-stat-label" data-field="label">cost per ton</p>
+            </div>
+            <div class="mgf-card-accent">
+              <p class="mgf-stat-value" data-field="value">94%</p>
+              <p class="mgf-stat-label" data-field="label">verified removal</p>
+            </div>
+            <div class="mgf-card-accent">
+              <p class="mgf-stat-value" data-field="value">18 mo</p>
+              <p class="mgf-stat-label" data-field="label">to permanence</p>
+            </div>
+          </div>
+          <p class="mgf-caption mgf-mt-md" data-field="caption">Source: independent verification, Q2 2026.</p>
+          <p class="mgf-slide-number" data-field="id">04</p>
+        </section>
+        HTML;
+    }
+
+    private function slideEarthTimeline(): string
+    {
+        return <<<'HTML'
+        <!-- Component: timeline (earth-organic). Fields: eyebrow, title, steps[]. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="eyebrow">Roadmap</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">From 12kt to 1Mt</h2>
+          <ol class="mgf-timeline mgf-mt-lg" data-field="steps">
+            <li class="mgf-timeline-item">
+              <span class="mgf-timeline-dot"></span>
+              <p class="mgf-step-number" data-field="date">2024</p>
+              <p class="mgf-body" data-field="label">Pilot plant, Iceland</p>
+            </li>
+            <li class="mgf-timeline-item">
+              <span class="mgf-timeline-dot"></span>
+              <p class="mgf-step-number" data-field="date">2026</p>
+              <p class="mgf-body" data-field="label">First commercial site</p>
+            </li>
+            <li class="mgf-timeline-item">
+              <span class="mgf-timeline-dot"></span>
+              <p class="mgf-step-number" data-field="date">2028</p>
+              <p class="mgf-body" data-field="label">100kt capacity</p>
+            </li>
+            <li class="mgf-timeline-item">
+              <span class="mgf-timeline-dot"></span>
+              <p class="mgf-step-number" data-field="date">2031</p>
+              <p class="mgf-body" data-field="label">1Mt capacity</p>
+            </li>
+          </ol>
+          <p class="mgf-slide-number" data-field="id">05</p>
+        </section>
+        HTML;
+    }
+
+    private function slideEarthFeatures(): string
+    {
+        return <<<'HTML'
+        <!-- Component: features (earth-organic, 3-up). Fields: eyebrow, title, features[]. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="eyebrow">Why us</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">Three advantages</h2>
+          <div class="mgf-grid-3 mgf-mt-lg" data-field="features">
+            <div class="mgf-card">
+              <div class="mgf-feature-icon" data-field="icon">🌋</div>
+              <p class="mgf-feature-title" data-field="title">Local feedstock</p>
+              <p class="mgf-feature-desc" data-field="desc">Regional basalt, no global mineral logistics.</p>
+            </div>
+            <div class="mgf-card">
+              <div class="mgf-feature-icon" data-field="icon">⚡</div>
+              <p class="mgf-feature-title" data-field="title">Renewable-only</p>
+              <p class="mgf-feature-desc" data-field="desc">Powered by geothermal + wind, never the grid.</p>
+            </div>
+            <div class="mgf-card">
+              <div class="mgf-feature-icon" data-field="icon">♻️</div>
+              <p class="mgf-feature-title" data-field="title">Permanent</p>
+              <p class="mgf-feature-desc" data-field="desc">Carbonate rock is geologically stable for 100,000+ years.</p>
+            </div>
+          </div>
+          <p class="mgf-slide-number" data-field="id">06</p>
+        </section>
+        HTML;
+    }
+
+    private function slideEarthAsk(): string
+    {
+        return <<<'HTML'
+        <!-- Component: ask (earth-organic, centered). Fields: eyebrow, title, body. -->
+        <section class="mgf-slide mgf-flex mgf-flex-center">
+          <div class="mgf-text-center" style="max-width: 880px">
+            <p class="mgf-eyebrow" data-field="eyebrow">The round</p>
+            <div class="mgf-accent-bar mgf-mt-sm" style="margin-right:auto; margin-left:auto"></div>
+            <h2 class="mgf-title-xl mgf-mt-md" data-field="title">Raising $90M Series B</h2>
+            <p class="mgf-subtitle mgf-mt-md" data-field="body">Use-of-funds paragraph.</p>
+            <p class="mgf-slide-number" data-field="id">07</p>
+          </div>
+        </section>
+        HTML;
+    }
+
+    private function slideEarthClosing(): string
+    {
+        return <<<'HTML'
+        <!-- Component: closing (earth-organic, centered CTA). Fields: eyebrow, title, cta, footer. -->
+        <section class="mgf-slide mgf-flex mgf-flex-center">
+          <div class="mgf-text-center" style="max-width: 720px">
+            <p class="mgf-eyebrow" data-field="eyebrow">Get in touch</p>
+            <div class="mgf-accent-bar mgf-mt-sm" style="margin-right:auto; margin-left:auto"></div>
+            <h2 class="mgf-title-xl mgf-mt-md" data-field="title">Closing line</h2>
+            <a class="mgf-cta-solid mgf-mt-lg" href="#" data-field="cta_url" data-label-field="cta">hello@project.earth</a>
+            <p class="mgf-caption mgf-mt-md" data-field="footer">Series B — 2026</p>
+          </div>
+          <p class="mgf-slide-number" data-field="id">08</p>
+        </section>
+        HTML;
+    }
+
+    // ====================================================================
+    //  Neon-cyber archetype (8 slides, fintech / security pitch)
+    //  Deep black + electric magenta + cyan. JetBrains Mono display +
+    //  Inter body. Distinct from the LTR pitch by its cyber/terminal
+    //  aesthetic and monospaced headings.
+    // ====================================================================
+
+    protected function neonCyberFiles($owner): array
+    {
+        return [
+            ['layer' => 'meta',    'name' => 'meta.md',     'extension' => 'md',   'content' => "# {$owner->name}\n\n{$owner->description}"],
+            ['layer' => 'context', 'name' => 'context.md',  'extension' => 'md',   'content' => $this->neonCyberContext()],
+            ['layer' => 'rules',   'name' => 'rules.md',    'extension' => 'md',   'content' => $this->rulesFor('neon-cyber')],
+            ['layer' => 'style',   'name' => 'style.css',   'extension' => 'css',  'content' => $this->neonCyberStyleCss()],
+            ['layer' => 'layout',  'name' => 'layout.css',  'extension' => 'css',  'content' => $this->layoutCss16x9()],
+            ['layer' => 'content', 'name' => 'data.json',   'extension' => 'json', 'content' => $this->neonCyberDataJson($owner)],
+
+            ['layer' => 'slide', 'name' => 'slide-01.html', 'extension' => 'html', 'content' => $this->slideNeonCover()],
+            ['layer' => 'slide', 'name' => 'slide-02.html', 'extension' => 'html', 'content' => $this->slideNeonProblem()],
+            ['layer' => 'slide', 'name' => 'slide-03.html', 'extension' => 'html', 'content' => $this->slideNeonSolution()],
+            ['layer' => 'slide', 'name' => 'slide-04.html', 'extension' => 'html', 'content' => $this->slideNeonStats()],
+            ['layer' => 'slide', 'name' => 'slide-05.html', 'extension' => 'html', 'content' => $this->slideNeonFeatures()],
+            ['layer' => 'slide', 'name' => 'slide-06.html', 'extension' => 'html', 'content' => $this->slideNeonSecurity()],
+            ['layer' => 'slide', 'name' => 'slide-07.html', 'extension' => 'html', 'content' => $this->slideNeonAsk()],
+            ['layer' => 'slide', 'name' => 'slide-08.html', 'extension' => 'html', 'content' => $this->slideNeonClosing()],
+        ];
+    }
+
+    private function neonCyberContext(): string
+    {
+        return <<<MD
+        # Project Context
+
+        ## Purpose
+        Cybersecurity / fintech-security pitch. Technical and direct.
+
+        ## Audience
+        CISOs, security-focused VCs, technical co-founders.
+
+        ## Brand voice
+        Confident, terse, zero hype. Every claim backed by a CVE or a paper.
+
+        ## Visual constraints
+        - Palette: deep black + electric magenta + cyan
+        - Typography: JetBrains Mono for headings, Inter for body
+        - Code blocks and terminal-style callouts welcome
+        MD;
+    }
+
+    private function neonCyberStyleCss(): string
+    {
+        return <<<'CSS'
+        :root {
+          --mgf-color-bg:            #0a0a0f;
+          --mgf-color-surface:       #11121a;
+          --mgf-color-surface-2:     #1c1e2a;
+          --mgf-color-border:        rgba(255, 255, 255, 0.10);
+          --mgf-color-border-strong: #2a2d3e;
+          --mgf-color-text-primary:  #e7eaf0;
+          --mgf-color-text-secondary:#7a82a3;
+          --mgf-color-text-inverse:  #0a0a0f;
+          --mgf-color-accent:        #ec4899;
+          --mgf-color-accent-soft:   rgba(236, 72, 153, 0.14);
+          --mgf-color-accent-2:      #22d3ee;
+
+          --mgf-font-display: 'JetBrains Mono', ui-monospace, monospace;
+          --mgf-font-body:    'Inter', system-ui, sans-serif;
+          --mgf-font-mono:    'JetBrains Mono', ui-monospace, monospace;
+
+          --mgf-text-xs:   0.75rem;
+          --mgf-text-sm:   0.875rem;
+          --mgf-text-base: 1rem;
+          --mgf-text-lg:   1.25rem;
+          --mgf-text-xl:   1.625rem;
+          --mgf-text-2xl:  2.25rem;
+          --mgf-text-3xl:  3rem;
+          --mgf-text-4xl:  4.25rem;
+
+          --mgf-weight-medium: 500;
+          --mgf-weight-bold:   700;
+          --mgf-leading-tight:  1.12;
+          --mgf-leading-normal: 1.5;
+          --mgf-leading-loose:  1.7;
+          --mgf-tracking-tight:  -0.04em;
+          --mgf-tracking-normal: 0em;
+          --mgf-tracking-wide:   0.06em;
+
+          --mgf-space-1:  0.25rem;
+          --mgf-space-2:  0.5rem;
+          --mgf-space-3:  0.75rem;
+          --mgf-space-4:  1rem;
+          --mgf-space-6:  1.5rem;
+          --mgf-space-8:  2rem;
+          --mgf-space-12: 3rem;
+          --mgf-space-16: 4rem;
+          --mgf-space-24: 6rem;
+
+          --mgf-radius-sm: 2px;
+          --mgf-radius-md: 6px;
+          --mgf-radius-lg: 12px;
+          --mgf-radius-xl: 18px;
+
+          --mgf-slide-w:     1280px;
+          --mgf-slide-h:     720px;
+          --mgf-slide-pad-x: 72px;
+          --mgf-slide-pad-y: 56px;
+
+          --mgf-accent-line: 3px solid var(--mgf-color-accent);
+          --mgf-divider:     1px solid var(--mgf-color-border);
+        }
+        CSS;
+    }
+
+    private function neonCyberDataJson($owner): string
+    {
+        $payload = [
+            '_meta' => [
+                'project' => $owner->name,
+                'version' => '1.0',
+                'output_target' => 'presentation-deck',
+                'format' => '16:9',
+                'language' => 'en',
+                'direction' => 'ltr',
+                'total_slides' => 8,
+                'components_used' => [
+                    'cover', 'problem', 'solution', 'stats',
+                    'features', 'security', 'ask', 'closing',
+                ],
+            ],
+            'slides' => [
+                ['id' => 1, 'component' => 'cover', 'data' => [
+                    'title' => $owner->name,
+                    'subtitle' => $owner->description,
+                    'author' => $owner->name.' security',
+                    'date' => '2026 Series A',
+                ]],
+                ['id' => 2, 'component' => 'problem', 'data' => [
+                    'eyebrow' => '> threat',
+                    'title' => 'Credential-stuffing attacks scale linearly with breaches',
+                    'body' => '24 billion leaked credentials are circulating on the dark web in 2026. Every SaaS login is one bot away from compromise.',
+                ]],
+                ['id' => 3, 'component' => 'solution', 'data' => [
+                    'eyebrow' => '> solution',
+                    'title' => 'Continuous identity assurance, no MFA fatigue',
+                    'body' => 'Silent device-bound attestation replaces the password prompt. Users keep their flow; attackers lose the surface.',
+                ]],
+                ['id' => 4, 'component' => 'stats', 'data' => [
+                    'eyebrow' => '> numbers',
+                    'title' => 'Live deployment results',
+                    'stats' => [
+                        ['value' => '99.7%',  'label' => 'credential-stuffing blocked'],
+                        ['value' => '0',      'label' => 'MFA prompts per session'],
+                        ['value' => '<50ms',  'label' => 'avg. authentication latency'],
+                        ['value' => '12 mo',  'label' => 'to SOC 2 Type II'],
+                    ],
+                    'caption' => 'Production data, 3.4M users across 14 enterprise customers.',
+                ]],
+                ['id' => 5, 'component' => 'features', 'data' => [
+                    'eyebrow' => '> stack',
+                    'title' => 'What we built',
+                    'features' => [
+                        ['icon' => '🔐', 'title' => 'Device-bound keys', 'desc' => 'FIDO2 / WebAuthn + secure enclave.'],
+                        ['icon' => '🛰', 'title' => 'Risk telemetry', 'desc' => 'Per-session signals, on-device scoring.'],
+                        ['icon' => '🔌', 'title' => 'Drop-in SDK',     'desc' => '5 lines of code, any web stack.'],
+                    ],
+                ]],
+                ['id' => 6, 'component' => 'security', 'data' => [
+                    'eyebrow' => '> posture',
+                    'title' => 'Compliance + threat model',
+                    'body' => 'SOC 2 Type II, ISO 27001, FIDO Alliance member. Threat model published; bug bounty since day one.',
+                ]],
+                ['id' => 7, 'component' => 'ask', 'data' => [
+                    'eyebrow' => '> round',
+                    'title' => 'Raising $25M Series A',
+                    'body' => 'Grow enterprise security, expand to EU + APAC, double the engineering team.',
+                ]],
+                ['id' => 8, 'component' => 'closing', 'data' => [
+                    'eyebrow' => '> contact',
+                    'title' => 'Built by attackers, for defenders',
+                    'cta' => 'hello@vitral.security',
+                    'footer' => $owner->name.' — Series A — 2026',
+                ]],
+            ],
+        ];
+
+        return json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    }
+
+    private function slideNeonCover(): string
+    {
+        return <<<'HTML'
+        <!-- Component: cover (neon-cyber). Fields: title, subtitle, author, date. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="author">Security team</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h1 class="mgf-title-xl mgf-mt-md" data-field="title">Project name</h1>
+          <p class="mgf-subtitle mgf-mt-md" data-field="subtitle">One line about the security problem solved.</p>
+          <p class="mgf-label mgf-mt-lg" data-field="date">2026 Series A</p>
+          <p class="mgf-slide-number" data-field="id">01</p>
+        </section>
+        HTML;
+    }
+
+    private function slideNeonProblem(): string
+    {
+        return <<<'HTML'
+        <!-- Component: problem (neon-cyber). Fields: eyebrow, title, body. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="eyebrow">&gt; threat</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">Threat headline</h2>
+          <p class="mgf-body mgf-mt-md" data-field="body">One paragraph describing the threat vector and its blast radius.</p>
+          <p class="mgf-slide-number" data-field="id">02</p>
+        </section>
+        HTML;
+    }
+
+    private function slideNeonSolution(): string
+    {
+        return <<<'HTML'
+        <!-- Component: solution (neon-cyber). Fields: eyebrow, title, body. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="eyebrow">&gt; solution</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">Solution headline</h2>
+          <p class="mgf-body mgf-mt-md" data-field="body">One paragraph describing how the product mitigates the threat.</p>
+          <p class="mgf-slide-number" data-field="id">03</p>
+        </section>
+        HTML;
+    }
+
+    private function slideNeonStats(): string
+    {
+        return <<<'HTML'
+        <!-- Component: stats (neon-cyber, 4-up). Fields: eyebrow, title, stats[], caption. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="eyebrow">&gt; numbers</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">Production results</h2>
+          <div class="mgf-stat-group mgf-mt-lg" data-field="stats">
+            <div class="mgf-card-accent">
+              <p class="mgf-stat-value" data-field="value">99.7%</p>
+              <p class="mgf-stat-label" data-field="label">attacks blocked</p>
+            </div>
+            <div class="mgf-card-accent">
+              <p class="mgf-stat-value" data-field="value">0</p>
+              <p class="mgf-stat-label" data-field="label">MFA prompts</p>
+            </div>
+            <div class="mgf-card-accent">
+              <p class="mgf-stat-value" data-field="value">&lt;50ms</p>
+              <p class="mgf-stat-label" data-field="label">auth latency</p>
+            </div>
+            <div class="mgf-card-accent">
+              <p class="mgf-stat-value" data-field="value">12 mo</p>
+              <p class="mgf-stat-label" data-field="label">to SOC 2</p>
+            </div>
+          </div>
+          <p class="mgf-caption mgf-mt-md" data-field="caption">Production data, 3.4M users.</p>
+          <p class="mgf-slide-number" data-field="id">04</p>
+        </section>
+        HTML;
+    }
+
+    private function slideNeonFeatures(): string
+    {
+        return <<<'HTML'
+        <!-- Component: features (neon-cyber, 3-up). Fields: eyebrow, title, features[]. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="eyebrow">&gt; stack</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">What we built</h2>
+          <div class="mgf-grid-3 mgf-mt-lg" data-field="features">
+            <div class="mgf-card">
+              <div class="mgf-feature-icon" data-field="icon">🔐</div>
+              <p class="mgf-feature-title" data-field="title">Device-bound keys</p>
+              <p class="mgf-feature-desc" data-field="desc">FIDO2 + secure enclave.</p>
+            </div>
+            <div class="mgf-card">
+              <div class="mgf-feature-icon" data-field="icon">🛰</div>
+              <p class="mgf-feature-title" data-field="title">Risk telemetry</p>
+              <p class="mgf-feature-desc" data-field="desc">On-device scoring.</p>
+            </div>
+            <div class="mgf-card">
+              <div class="mgf-feature-icon" data-field="icon">🔌</div>
+              <p class="mgf-feature-title" data-field="title">Drop-in SDK</p>
+              <p class="mgf-feature-desc" data-field="desc">5 lines of code.</p>
+            </div>
+          </div>
+          <p class="mgf-slide-number" data-field="id">05</p>
+        </section>
+        HTML;
+    }
+
+    private function slideNeonSecurity(): string
+    {
+        return <<<'HTML'
+        <!-- Component: security (neon-cyber, callout block). Fields: eyebrow, title, body. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="eyebrow">&gt; posture</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">Compliance + threat model</h2>
+          <p class="mgf-body mgf-mt-md" data-field="body">
+            SOC 2 Type II, ISO 27001, FIDO Alliance member. Threat model published;
+            bug bounty since day one.
+          </p>
+          <figure class="mgf-callout mgf-callout-info mgf-mt-lg">
+            <p class="mgf-callout-text">
+              Independent third-party audit refreshed every 90 days. Last audit
+              completed March 2026 — zero open criticals.
+            </p>
+          </figure>
+          <p class="mgf-slide-number" data-field="id">06</p>
+        </section>
+        HTML;
+    }
+
+    private function slideNeonAsk(): string
+    {
+        return <<<'HTML'
+        <!-- Component: ask (neon-cyber, centered). Fields: eyebrow, title, body. -->
+        <section class="mgf-slide mgf-flex mgf-flex-center">
+          <div class="mgf-text-center" style="max-width: 880px">
+            <p class="mgf-eyebrow" data-field="eyebrow">&gt; round</p>
+            <div class="mgf-accent-bar mgf-mt-sm" style="margin-right:auto; margin-left:auto"></div>
+            <h2 class="mgf-title-xl mgf-mt-md" data-field="title">Raising $25M Series A</h2>
+            <p class="mgf-subtitle mgf-mt-md" data-field="body">Use-of-funds paragraph.</p>
+            <p class="mgf-slide-number" data-field="id">07</p>
+          </div>
+        </section>
+        HTML;
+    }
+
+    private function slideNeonClosing(): string
+    {
+        return <<<'HTML'
+        <!-- Component: closing (neon-cyber, centered CTA). Fields: eyebrow, title, cta, footer. -->
+        <section class="mgf-slide mgf-flex mgf-flex-center">
+          <div class="mgf-text-center" style="max-width: 720px">
+            <p class="mgf-eyebrow" data-field="eyebrow">&gt; contact</p>
+            <div class="mgf-accent-bar mgf-mt-sm" style="margin-right:auto; margin-left:auto"></div>
+            <h2 class="mgf-title-xl mgf-mt-md" data-field="title">Built by attackers, for defenders</h2>
+            <a class="mgf-cta-solid mgf-mt-lg" href="#" data-field="cta_url" data-label-field="cta">hello@project.security</a>
+            <p class="mgf-caption mgf-mt-md" data-field="footer">Series A — 2026</p>
+          </div>
+          <p class="mgf-slide-number" data-field="id">08</p>
+        </section>
+        HTML;
+    }
+
+    // ====================================================================
+    //  Sunset-warm archetype (6 slides, consumer / lifestyle pitch)
+    //  Warm peach + coral + soft indigo. Inter everywhere. Distinct
+    //  from the LTR pitch by its warm gradient feel and shorter deck.
+    // ====================================================================
+
+    protected function sunsetWarmFiles($owner): array
+    {
+        return [
+            ['layer' => 'meta',    'name' => 'meta.md',     'extension' => 'md',   'content' => "# {$owner->name}\n\n{$owner->description}"],
+            ['layer' => 'context', 'name' => 'context.md',  'extension' => 'md',   'content' => $this->sunsetWarmContext()],
+            ['layer' => 'rules',   'name' => 'rules.md',    'extension' => 'md',   'content' => $this->rulesFor('sunset-warm')],
+            ['layer' => 'style',   'name' => 'style.css',   'extension' => 'css',  'content' => $this->sunsetWarmStyleCss()],
+            ['layer' => 'layout',  'name' => 'layout.css',  'extension' => 'css',  'content' => $this->layoutCss16x9()],
+            ['layer' => 'content', 'name' => 'data.json',   'extension' => 'json', 'content' => $this->sunsetWarmDataJson($owner)],
+
+            ['layer' => 'slide', 'name' => 'slide-01.html', 'extension' => 'html', 'content' => $this->slideSunsetCover()],
+            ['layer' => 'slide', 'name' => 'slide-02.html', 'extension' => 'html', 'content' => $this->slideSunsetProblem()],
+            ['layer' => 'slide', 'name' => 'slide-03.html', 'extension' => 'html', 'content' => $this->slideSunsetSolution()],
+            ['layer' => 'slide', 'name' => 'slide-04.html', 'extension' => 'html', 'content' => $this->slideSunsetStats()],
+            ['layer' => 'slide', 'name' => 'slide-05.html', 'extension' => 'html', 'content' => $this->slideSunsetFeatures()],
+            ['layer' => 'slide', 'name' => 'slide-06.html', 'extension' => 'html', 'content' => $this->slideSunsetClosing()],
+        ];
+    }
+
+    private function sunsetWarmContext(): string
+    {
+        return <<<MD
+        # Project Context
+
+        ## Purpose
+        Consumer / lifestyle product pitch. Warm, optimistic, lifestyle-led.
+
+        ## Audience
+        Pre-seed / seed-stage consumer investors. Brand-led, demographic-aware.
+
+        ## Brand voice
+        Warm, optimistic, conversational. Lead with the lifestyle, close with the unit economics.
+
+        ## Visual constraints
+        - Palette: warm peach + coral + soft indigo
+        - Typography: Inter display + Inter body
+        - Heavy use of personality; numbers are second
+        MD;
+    }
+
+    private function sunsetWarmStyleCss(): string
+    {
+        return <<<'CSS'
+        :root {
+          --mgf-color-bg:            #fff7ed;
+          --mgf-color-surface:       #ffffff;
+          --mgf-color-surface-2:     #ffe7d4;
+          --mgf-color-border:        rgba(58, 30, 12, 0.10);
+          --mgf-color-border-strong: #3a1e0c;
+          --mgf-color-text-primary:  #3a1e0c;
+          --mgf-color-text-secondary:#7c5b48;
+          --mgf-color-text-inverse:  #ffffff;
+          --mgf-color-accent:        #ff6b6b;
+          --mgf-color-accent-soft:   rgba(255, 107, 107, 0.12);
+          --mgf-color-accent-2:      #818cf8;
+
+          --mgf-font-display: 'Inter', system-ui, sans-serif;
+          --mgf-font-body:    'Inter', system-ui, sans-serif;
+          --mgf-font-mono:    'JetBrains Mono', ui-monospace, monospace;
+
+          --mgf-text-xs:   0.75rem;
+          --mgf-text-sm:   0.9375rem;
+          --mgf-text-base: 1.0625rem;
+          --mgf-text-lg:   1.25rem;
+          --mgf-text-xl:   1.75rem;
+          --mgf-text-2xl:  2.5rem;
+          --mgf-text-3xl:  3.5rem;
+          --mgf-text-4xl:  5rem;
+
+          --mgf-weight-medium: 500;
+          --mgf-weight-bold:   700;
+          --mgf-leading-tight:  1.12;
+          --mgf-leading-normal: 1.5;
+          --mgf-leading-loose:  1.7;
+          --mgf-tracking-tight:  -0.025em;
+          --mgf-tracking-normal: 0em;
+          --mgf-tracking-wide:   0.06em;
+
+          --mgf-space-1:  0.25rem;
+          --mgf-space-2:  0.5rem;
+          --mgf-space-3:  0.75rem;
+          --mgf-space-4:  1rem;
+          --mgf-space-6:  1.5rem;
+          --mgf-space-8:  2rem;
+          --mgf-space-12: 3rem;
+          --mgf-space-16: 4rem;
+          --mgf-space-24: 6rem;
+
+          --mgf-radius-sm: 8px;
+          --mgf-radius-md: 14px;
+          --mgf-radius-lg: 22px;
+          --mgf-radius-xl: 32px;
+
+          --mgf-slide-w:     1280px;
+          --mgf-slide-h:     720px;
+          --mgf-slide-pad-x: 80px;
+          --mgf-slide-pad-y: 64px;
+
+          --mgf-accent-line: 4px solid var(--mgf-color-accent);
+          --mgf-divider:     1px solid var(--mgf-color-border);
+        }
+        CSS;
+    }
+
+    private function sunsetWarmDataJson($owner): string
+    {
+        $payload = [
+            '_meta' => [
+                'project' => $owner->name,
+                'version' => '1.0',
+                'output_target' => 'presentation-deck',
+                'format' => '16:9',
+                'language' => 'en',
+                'direction' => 'ltr',
+                'total_slides' => 6,
+                'components_used' => [
+                    'cover', 'problem', 'solution', 'stats', 'features', 'closing',
+                ],
+            ],
+            'slides' => [
+                ['id' => 1, 'component' => 'cover', 'data' => [
+                    'title' => $owner->name,
+                    'subtitle' => $owner->description,
+                    'author' => $owner->name.' team',
+                    'date' => 'Pre-seed — 2026',
+                ]],
+                ['id' => 2, 'component' => 'problem', 'data' => [
+                    'eyebrow' => 'Today',
+                    'title' => 'Hair care is one of the last un-personalized categories',
+                    'body' => 'Women in the Gulf spend $480/year on hair products, and 78% say none of them quite fit their hair.',
+                ]],
+                ['id' => 3, 'component' => 'solution', 'data' => [
+                    'eyebrow' => 'Our answer',
+                    'title' => 'Personalized formulas, shipped every 60 days',
+                    'body' => 'A 3-minute quiz + humidity data from your zip code = a shampoo blended for the next 8 weeks.',
+                ]],
+                ['id' => 4, 'component' => 'stats', 'data' => [
+                    'eyebrow' => 'Numbers',
+                    'title' => 'Eight months in market',
+                    'stats' => [
+                        ['value' => '4,200', 'label' => 'subscribers'],
+                        ['value' => '$98',   'label' => 'average LTV'],
+                        ['value' => '92%',   'label' => 'subscribe to month 4'],
+                        ['value' => '2.6×',  'label' => 'D2C repeat rate vs category'],
+                    ],
+                    'caption' => 'UAE + KSA, December 2025 cohort.',
+                ]],
+                ['id' => 5, 'component' => 'features', 'data' => [
+                    'eyebrow' => 'Why us',
+                    'title' => 'Three things we do better',
+                    'features' => [
+                        ['icon' => '🧪', 'title' => 'Personalized blend', 'desc' => '12 base formulas × 9 additives = 108 unique SKUs.'],
+                        ['icon' => '🌡', 'title' => 'Climate-aware', 'desc' => 'We factor local humidity into every shipment.'],
+                        ['icon' => '📦', 'title' => 'Subscribe + forget', 'desc' => 'Refills auto-ship, pause anytime.'],
+                    ],
+                ]],
+                ['id' => 6, 'component' => 'closing', 'data' => [
+                    'eyebrow' => 'Join us',
+                    'title' => 'Hair, finally, fits',
+                    'cta' => 'hello@marask.care',
+                    'footer' => $owner->name.' — Pre-seed — 2026',
+                ]],
+            ],
+        ];
+
+        return json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    }
+
+    private function slideSunsetCover(): string
+    {
+        return <<<'HTML'
+        <!-- Component: cover (sunset-warm). Fields: title, subtitle, author, date. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="author">Team</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h1 class="mgf-title-xl mgf-mt-md" data-field="title">Project name</h1>
+          <p class="mgf-subtitle mgf-mt-md" data-field="subtitle">One line about the product.</p>
+          <p class="mgf-label mgf-mt-lg" data-field="date">Pre-seed — 2026</p>
+          <p class="mgf-slide-number" data-field="id">01</p>
+        </section>
+        HTML;
+    }
+
+    private function slideSunsetProblem(): string
+    {
+        return <<<'HTML'
+        <!-- Component: problem (sunset-warm). Fields: eyebrow, title, body. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="eyebrow">Today</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">Problem headline</h2>
+          <p class="mgf-body mgf-mt-md" data-field="body">One paragraph about the consumer pain point.</p>
+          <p class="mgf-slide-number" data-field="id">02</p>
+        </section>
+        HTML;
+    }
+
+    private function slideSunsetSolution(): string
+    {
+        return <<<'HTML'
+        <!-- Component: solution (sunset-warm). Fields: eyebrow, title, body. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="eyebrow">Our answer</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">Solution headline</h2>
+          <p class="mgf-body mgf-mt-md" data-field="body">One paragraph describing the product.</p>
+          <p class="mgf-slide-number" data-field="id">03</p>
+        </section>
+        HTML;
+    }
+
+    private function slideSunsetStats(): string
+    {
+        return <<<'HTML'
+        <!-- Component: stats (sunset-warm, 4-up). Fields: eyebrow, title, stats[], caption. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="eyebrow">Numbers</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">Eight months in market</h2>
+          <div class="mgf-stat-group mgf-mt-lg" data-field="stats">
+            <div class="mgf-card-accent">
+              <p class="mgf-stat-value" data-field="value">4,200</p>
+              <p class="mgf-stat-label" data-field="label">subscribers</p>
+            </div>
+            <div class="mgf-card-accent">
+              <p class="mgf-stat-value" data-field="value">$98</p>
+              <p class="mgf-stat-label" data-field="label">avg LTV</p>
+            </div>
+            <div class="mgf-card-accent">
+              <p class="mgf-stat-value" data-field="value">92%</p>
+              <p class="mgf-stat-label" data-field="label">retention</p>
+            </div>
+            <div class="mgf-card-accent">
+              <p class="mgf-stat-value" data-field="value">2.6×</p>
+              <p class="mgf-stat-label" data-field="label">category repeat</p>
+            </div>
+          </div>
+          <p class="mgf-caption mgf-mt-md" data-field="caption">UAE + KSA, December 2025 cohort.</p>
+          <p class="mgf-slide-number" data-field="id">04</p>
+        </section>
+        HTML;
+    }
+
+    private function slideSunsetFeatures(): string
+    {
+        return <<<'HTML'
+        <!-- Component: features (sunset-warm, 3-up). Fields: eyebrow, title, features[]. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="eyebrow">Why us</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">Three things we do better</h2>
+          <div class="mgf-grid-3 mgf-mt-lg" data-field="features">
+            <div class="mgf-card">
+              <div class="mgf-feature-icon" data-field="icon">🧪</div>
+              <p class="mgf-feature-title" data-field="title">Personalized blend</p>
+              <p class="mgf-feature-desc" data-field="desc">12 base formulas × 9 additives.</p>
+            </div>
+            <div class="mgf-card">
+              <div class="mgf-feature-icon" data-field="icon">🌡</div>
+              <p class="mgf-feature-title" data-field="title">Climate-aware</p>
+              <p class="mgf-feature-desc" data-field="desc">Humidity factored into every shipment.</p>
+            </div>
+            <div class="mgf-card">
+              <div class="mgf-feature-icon" data-field="icon">📦</div>
+              <p class="mgf-feature-title" data-field="title">Subscribe + forget</p>
+              <p class="mgf-feature-desc" data-field="desc">Refills auto-ship, pause anytime.</p>
+            </div>
+          </div>
+          <p class="mgf-slide-number" data-field="id">05</p>
+        </section>
+        HTML;
+    }
+
+    private function slideSunsetClosing(): string
+    {
+        return <<<'HTML'
+        <!-- Component: closing (sunset-warm, centered CTA). Fields: eyebrow, title, cta, footer. -->
+        <section class="mgf-slide mgf-flex mgf-flex-center">
+          <div class="mgf-text-center" style="max-width: 720px">
+            <p class="mgf-eyebrow" data-field="eyebrow">Join us</p>
+            <div class="mgf-accent-bar mgf-mt-sm" style="margin-right:auto; margin-left:auto"></div>
+            <h2 class="mgf-title-xl mgf-mt-md" data-field="title">Hair, finally, fits</h2>
+            <a class="mgf-cta-solid mgf-mt-lg" href="#" data-field="cta_url" data-label-field="cta">hello@project.care</a>
+            <p class="mgf-caption mgf-mt-md" data-field="footer">Pre-seed — 2026</p>
+          </div>
+          <p class="mgf-slide-number" data-field="id">06</p>
+        </section>
+        HTML;
+    }
+
+    // ====================================================================
+    //  Monochrome-editorial archetype (4 slides, haiku announcement)
+    //  Pure white + near-black + single yellow accent. The shortest
+    //  archetype in the suite — meant for product announcements and
+    //  brand haikus, not investor decks.
+    // ====================================================================
+
+    protected function monochromeEditorialFiles($owner): array
+    {
+        return [
+            ['layer' => 'meta',    'name' => 'meta.md',     'extension' => 'md',   'content' => "# {$owner->name}\n\n{$owner->description}"],
+            ['layer' => 'context', 'name' => 'context.md',  'extension' => 'md',   'content' => $this->monochromeEditorialContext()],
+            ['layer' => 'rules',   'name' => 'rules.md',    'extension' => 'md',   'content' => $this->rulesFor('monochrome-editorial')],
+            ['layer' => 'style',   'name' => 'style.css',   'extension' => 'css',  'content' => $this->monochromeEditorialStyleCss()],
+            ['layer' => 'layout',  'name' => 'layout.css',  'extension' => 'css',  'content' => $this->layoutCss16x9()],
+            ['layer' => 'content', 'name' => 'data.json',   'extension' => 'json', 'content' => $this->monochromeEditorialDataJson($owner)],
+
+            ['layer' => 'slide', 'name' => 'slide-01.html', 'extension' => 'html', 'content' => $this->slideMonochromeCover()],
+            ['layer' => 'slide', 'name' => 'slide-02.html', 'extension' => 'html', 'content' => $this->slideMonochromeHaiku()],
+            ['layer' => 'slide', 'name' => 'slide-03.html', 'extension' => 'html', 'content' => $this->slideMonochromeQuote()],
+            ['layer' => 'slide', 'name' => 'slide-04.html', 'extension' => 'html', 'content' => $this->slideMonochromeClosing()],
+        ];
+    }
+
+    private function monochromeEditorialContext(): string
+    {
+        return <<<MD
+        # Project Context
+
+        ## Purpose
+        A four-slide announcement deck for product launches and brand
+        haikus. The shortest archetype in the suite.
+
+        ## Audience
+        Internal stakeholders, customers, press.
+
+        ## Brand voice
+        Minimal. Every word earns its place.
+
+        ## Visual constraints
+        - Palette: pure white + near-black + one yellow accent
+        - Typography: Inter display + Inter body
+        - Max 12 words per slide body. Less is more.
+        MD;
+    }
+
+    private function monochromeEditorialStyleCss(): string
+    {
+        return <<<'CSS'
+        :root {
+          --mgf-color-bg:            #ffffff;
+          --mgf-color-surface:       #fafafa;
+          --mgf-color-surface-2:     #f4f4f4;
+          --mgf-color-border:        rgba(10, 10, 10, 0.10);
+          --mgf-color-border-strong: #0a0a0a;
+          --mgf-color-text-primary:  #0a0a0a;
+          --mgf-color-text-secondary:#525252;
+          --mgf-color-text-inverse:  #ffffff;
+          --mgf-color-accent:        #fbbf24;
+          --mgf-color-accent-soft:   rgba(251, 191, 36, 0.16);
+          --mgf-color-accent-2:      #0a0a0a;
+
+          --mgf-font-display: 'Inter', system-ui, sans-serif;
+          --mgf-font-body:    'Inter', system-ui, sans-serif;
+          --mgf-font-mono:    'JetBrains Mono', ui-monospace, monospace;
+
+          --mgf-text-xs:   0.75rem;
+          --mgf-text-sm:   0.875rem;
+          --mgf-text-base: 1rem;
+          --mgf-text-lg:   1.25rem;
+          --mgf-text-xl:   1.75rem;
+          --mgf-text-2xl:  2.5rem;
+          --mgf-text-3xl:  3.5rem;
+          --mgf-text-4xl:  5.5rem;
+
+          --mgf-weight-medium: 500;
+          --mgf-weight-bold:   700;
+          --mgf-leading-tight:  1.05;
+          --mgf-leading-normal: 1.4;
+          --mgf-leading-loose:  1.65;
+          --mgf-tracking-tight:  -0.04em;
+          --mgf-tracking-normal: 0em;
+          --mgf-tracking-wide:   0.10em;
+
+          --mgf-space-1:  0.25rem;
+          --mgf-space-2:  0.5rem;
+          --mgf-space-3:  0.75rem;
+          --mgf-space-4:  1rem;
+          --mgf-space-6:  1.5rem;
+          --mgf-space-8:  2rem;
+          --mgf-space-12: 3rem;
+          --mgf-space-16: 4rem;
+          --mgf-space-24: 6rem;
+
+          --mgf-radius-sm: 0px;
+          --mgf-radius-md: 2px;
+          --mgf-radius-lg: 4px;
+          --mgf-radius-xl: 8px;
+
+          --mgf-slide-w:     1280px;
+          --mgf-slide-h:     720px;
+          --mgf-slide-pad-x: 96px;
+          --mgf-slide-pad-y: 80px;
+
+          --mgf-accent-line: 6px solid var(--mgf-color-accent);
+          --mgf-divider:     1px solid var(--mgf-color-border);
+        }
+        CSS;
+    }
+
+    private function monochromeEditorialDataJson($owner): string
+    {
+        $payload = [
+            '_meta' => [
+                'project' => $owner->name,
+                'version' => '1.0',
+                'output_target' => 'presentation-deck',
+                'format' => '16:9',
+                'language' => 'en',
+                'direction' => 'ltr',
+                'total_slides' => 4,
+                'components_used' => [
+                    'cover', 'haiku', 'quote', 'closing',
+                ],
+            ],
+            'slides' => [
+                ['id' => 1, 'component' => 'cover', 'data' => [
+                    'title' => $owner->name,
+                    'subtitle' => $owner->description,
+                    'author' => $owner->name.' studio',
+                    'date' => '2026',
+                ]],
+                ['id' => 2, 'component' => 'haiku', 'data' => [
+                    'eyebrow' => 'A haiku',
+                    'title' => 'One word at a time',
+                    'body' => 'Less, but better.',
+                ]],
+                ['id' => 3, 'component' => 'quote', 'data' => [
+                    'eyebrow' => 'In the founder’s words',
+                    'title' => 'A quote that anchors the launch',
+                    'body' => 'We started this because the existing options were all noise. We wanted one signal.',
+                ]],
+                ['id' => 4, 'component' => 'closing', 'data' => [
+                    'eyebrow' => 'Launch',
+                    'title' => 'Live today',
+                    'cta' => 'project.studio',
+                    'footer' => $owner->name.' — 2026',
+                ]],
+            ],
+        ];
+
+        return json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    }
+
+    private function slideMonochromeCover(): string
+    {
+        return <<<'HTML'
+        <!-- Component: cover (monochrome-editorial). Fields: title, subtitle, author, date. -->
+        <section class="mgf-slide mgf-flex mgf-flex-center">
+          <div class="mgf-text-center" style="max-width: 880px">
+            <p class="mgf-eyebrow" data-field="author">Studio</p>
+            <div class="mgf-accent-bar mgf-mt-sm" style="margin-right:auto; margin-left:auto"></div>
+            <h1 class="mgf-title-xl mgf-mt-md" data-field="title">Project name</h1>
+            <p class="mgf-subtitle mgf-mt-md" data-field="subtitle">One line.</p>
+            <p class="mgf-label mgf-mt-lg" data-field="date">2026</p>
+          </div>
+          <p class="mgf-slide-number" data-field="id">01</p>
+        </section>
+        HTML;
+    }
+
+    private function slideMonochromeHaiku(): string
+    {
+        return <<<'HTML'
+        <!-- Component: haiku (monochrome-editorial). Fields: eyebrow, title, body.
+             A pure-typography slide: short line + medium line + short line. -->
+        <section class="mgf-slide mgf-flex mgf-flex-center">
+          <div class="mgf-text-center" style="max-width: 720px">
+            <p class="mgf-eyebrow" data-field="eyebrow">A haiku</p>
+            <h2 class="mgf-title-xl mgf-mt-md" data-field="title">One word at a time</h2>
+            <p class="mgf-body mgf-mt-lg" data-field="body">Less, but better.</p>
+          </div>
+          <p class="mgf-slide-number" data-field="id">02</p>
+        </section>
+        HTML;
+    }
+
+    private function slideMonochromeQuote(): string
+    {
+        return <<<'HTML'
+        <!-- Component: quote (monochrome-editorial). Fields: eyebrow, title, body. -->
+        <section class="mgf-slide mgf-flex mgf-flex-center">
+          <div class="mgf-text-center" style="max-width: 880px">
+            <p class="mgf-eyebrow" data-field="eyebrow">In the founder&rsquo;s words</p>
+            <div class="mgf-accent-bar mgf-mt-sm" style="margin-right:auto; margin-left:auto"></div>
+            <h2 class="mgf-title-lg mgf-mt-md" data-field="title">A quote that anchors the launch</h2>
+            <p class="mgf-quote-text mgf-mt-lg" data-field="body">
+              &ldquo;We started this because the existing options were all
+              noise. We wanted one signal.&rdquo;
+            </p>
+          </div>
+          <p class="mgf-slide-number" data-field="id">03</p>
+        </section>
+        HTML;
+    }
+
+    private function slideMonochromeClosing(): string
+    {
+        return <<<'HTML'
+        <!-- Component: closing (monochrome-editorial). Fields: eyebrow, title, cta, footer. -->
+        <section class="mgf-slide mgf-flex mgf-flex-center">
+          <div class="mgf-text-center" style="max-width: 720px">
+            <p class="mgf-eyebrow" data-field="eyebrow">Launch</p>
+            <div class="mgf-accent-bar mgf-mt-sm" style="margin-right:auto; margin-left:auto"></div>
+            <h2 class="mgf-title-xl mgf-mt-md" data-field="title">Live today</h2>
+            <a class="mgf-cta-solid mgf-mt-lg" href="#" data-field="cta_url" data-label-field="cta">project.studio</a>
+            <p class="mgf-caption mgf-mt-md" data-field="footer">2026</p>
+          </div>
+          <p class="mgf-slide-number" data-field="id">04</p>
+        </section>
+        HTML;
+    }
+
+    // ====================================================================
+    //  Vibrant-festival archetype (8 slides, event / consumer pitch)
+    //  Cream + fuchsia + lime + orange — three accents plus tertiary.
+    //  Bold, joyful, slightly chaotic. Distinct from the LTR pitch by
+    //  its multi-accent palette and rounded generous spacing.
+    // ====================================================================
+
+    protected function vibrantFestivalFiles($owner): array
+    {
+        return [
+            ['layer' => 'meta',    'name' => 'meta.md',     'extension' => 'md',   'content' => "# {$owner->name}\n\n{$owner->description}"],
+            ['layer' => 'context', 'name' => 'context.md',  'extension' => 'md',   'content' => $this->vibrantFestivalContext()],
+            ['layer' => 'rules',   'name' => 'rules.md',    'extension' => 'md',   'content' => $this->rulesFor('vibrant-festival')],
+            ['layer' => 'style',   'name' => 'style.css',   'extension' => 'css',  'content' => $this->vibrantFestivalStyleCss()],
+            ['layer' => 'layout',  'name' => 'layout.css',  'extension' => 'css',  'content' => $this->layoutCss16x9()],
+            ['layer' => 'content', 'name' => 'data.json',   'extension' => 'json', 'content' => $this->vibrantFestivalDataJson($owner)],
+
+            ['layer' => 'slide', 'name' => 'slide-01.html', 'extension' => 'html', 'content' => $this->slideVibrantCover()],
+            ['layer' => 'slide', 'name' => 'slide-02.html', 'extension' => 'html', 'content' => $this->slideVibrantProblem()],
+            ['layer' => 'slide', 'name' => 'slide-03.html', 'extension' => 'html', 'content' => $this->slideVibrantSolution()],
+            ['layer' => 'slide', 'name' => 'slide-04.html', 'extension' => 'html', 'content' => $this->slideVibrantStats()],
+            ['layer' => 'slide', 'name' => 'slide-05.html', 'extension' => 'html', 'content' => $this->slideVibrantFeatures()],
+            ['layer' => 'slide', 'name' => 'slide-06.html', 'extension' => 'html', 'content' => $this->slideVibrantTimeline()],
+            ['layer' => 'slide', 'name' => 'slide-07.html', 'extension' => 'html', 'content' => $this->slideVibrantAsk()],
+            ['layer' => 'slide', 'name' => 'slide-08.html', 'extension' => 'html', 'content' => $this->slideVibrantClosing()],
+        ];
+    }
+
+    private function vibrantFestivalContext(): string
+    {
+        return <<<MD
+        # Project Context
+
+        ## Purpose
+        An event / festival pitch. Loud, joyful, optimistic.
+
+        ## Audience
+        Event organizers, sponsors, city tourism boards.
+
+        ## Brand voice
+        High energy. Active verbs. Slightly chaotic on purpose.
+
+        ## Visual constraints
+        - Palette: cream + fuchsia + lime + orange (three accents)
+        - Typography: Inter display + Inter body
+        - Generous spacing, large radii, no quiet slides
+        MD;
+    }
+
+    private function vibrantFestivalStyleCss(): string
+    {
+        return <<<'CSS'
+        :root {
+          --mgf-color-bg:            #fafaf9;
+          --mgf-color-surface:       #ffffff;
+          --mgf-color-surface-2:     #f4f4f4;
+          --mgf-color-border:        rgba(20, 20, 20, 0.10);
+          --mgf-color-border-strong: #18181b;
+          --mgf-color-text-primary:  #18181b;
+          --mgf-color-text-secondary:#52525b;
+          --mgf-color-text-inverse:  #ffffff;
+          --mgf-color-accent:        #e879f9;
+          --mgf-color-accent-soft:   rgba(232, 121, 249, 0.14);
+          --mgf-color-accent-2:      #a3e635;
+          --mgf-color-accent-3:      #fb923c;
+
+          --mgf-font-display: 'Inter', system-ui, sans-serif;
+          --mgf-font-body:    'Inter', system-ui, sans-serif;
+          --mgf-font-mono:    'JetBrains Mono', ui-monospace, monospace;
+
+          --mgf-text-xs:   0.75rem;
+          --mgf-text-sm:   0.9375rem;
+          --mgf-text-base: 1.0625rem;
+          --mgf-text-lg:   1.25rem;
+          --mgf-text-xl:   1.75rem;
+          --mgf-text-2xl:  2.5rem;
+          --mgf-text-3xl:  3.5rem;
+          --mgf-text-4xl:  5.5rem;
+
+          --mgf-weight-medium: 500;
+          --mgf-weight-bold:   800;
+          --mgf-leading-tight:  1.05;
+          --mgf-leading-normal: 1.4;
+          --mgf-leading-loose:  1.6;
+          --mgf-tracking-tight:  -0.04em;
+          --mgf-tracking-normal: 0em;
+          --mgf-tracking-wide:   0.06em;
+
+          --mgf-space-1:  0.25rem;
+          --mgf-space-2:  0.5rem;
+          --mgf-space-3:  0.75rem;
+          --mgf-space-4:  1rem;
+          --mgf-space-6:  1.5rem;
+          --mgf-space-8:  2rem;
+          --mgf-space-12: 3rem;
+          --mgf-space-16: 4rem;
+          --mgf-space-24: 6rem;
+
+          --mgf-radius-sm: 10px;
+          --mgf-radius-md: 18px;
+          --mgf-radius-lg: 28px;
+          --mgf-radius-xl: 40px;
+
+          --mgf-slide-w:     1280px;
+          --mgf-slide-h:     720px;
+          --mgf-slide-pad-x: 80px;
+          --mgf-slide-pad-y: 60px;
+
+          --mgf-accent-line: 5px solid var(--mgf-color-accent);
+          --mgf-divider:     1px solid var(--mgf-color-border);
+        }
+        CSS;
+    }
+
+    private function vibrantFestivalDataJson($owner): string
+    {
+        $payload = [
+            '_meta' => [
+                'project' => $owner->name,
+                'version' => '1.0',
+                'output_target' => 'presentation-deck',
+                'format' => '16:9',
+                'language' => 'en',
+                'direction' => 'ltr',
+                'total_slides' => 8,
+                'components_used' => [
+                    'cover', 'problem', 'solution', 'stats',
+                    'features', 'timeline', 'ask', 'closing',
+                ],
+            ],
+            'slides' => [
+                ['id' => 1, 'component' => 'cover', 'data' => [
+                    'title' => $owner->name,
+                    'subtitle' => $owner->description,
+                    'author' => $owner->name.' crew',
+                    'date' => 'Summer 2026',
+                ]],
+                ['id' => 2, 'component' => 'problem', 'data' => [
+                    'eyebrow' => 'Why now',
+                    'title' => 'Cities need live moments more than ever',
+                    'body' => 'After three years of small screens, audiences are willing to pay real money for one weekend of real life.',
+                ]],
+                ['id' => 3, 'component' => 'solution', 'data' => [
+                    'eyebrow' => 'Our answer',
+                    'title' => 'A three-day outdoor festival, programmed by the audience',
+                    'body' => 'The lineup is crowdsourced. The schedule is shared. The merch is small-batch.',
+                ]],
+                ['id' => 4, 'component' => 'stats', 'data' => [
+                    'eyebrow' => 'Year one',
+                    'title' => 'Already oversubscribed',
+                    'stats' => [
+                        ['value' => '14,000', 'label' => 'tickets sold (48h)'],
+                        ['value' => '92%',    'label' => 'early-bird conversion'],
+                        ['value' => '180+',   'label' => 'acts programmed'],
+                        ['value' => '$1.4M',  'label' => 'sponsor interest'],
+                    ],
+                    'caption' => 'Pre-launch numbers, July 2026.',
+                ]],
+                ['id' => 5, 'component' => 'features', 'data' => [
+                    'eyebrow' => 'What makes it different',
+                    'title' => 'Three things nobody else is doing',
+                    'features' => [
+                        ['icon' => '🎤', 'title' => 'Audience-curated', 'desc' => 'Voting opens 60 days out. Top acts get prime slots.'],
+                        ['icon' => '🎁', 'title' => 'Small-batch merch',  'desc' => 'Eight artists, eight designs, every piece numbered.'],
+                        ['icon' => '🌳', 'title' => 'Zero-waste site',    'desc' => 'No single-use cups. Compostable everything.'],
+                    ],
+                ]],
+                ['id' => 6, 'component' => 'timeline', 'data' => [
+                    'eyebrow' => 'Run of show',
+                    'title' => 'The next 90 days',
+                    'steps' => [
+                        ['date' => 'Aug', 'label' => 'Lineup announcement'],
+                        ['date' => 'Sep', 'label' => 'Early-bird tickets open'],
+                        ['date' => 'Oct', 'label' => 'Site + permit signed off'],
+                        ['date' => 'Nov', 'label' => 'Festival weekend'],
+                    ],
+                ]],
+                ['id' => 7, 'component' => 'ask', 'data' => [
+                    'eyebrow' => 'We need',
+                    'title' => 'Closing the sponsor list',
+                    'body' => 'Three remaining headline slots. Each gets a stage naming, 1,200 VIP passes, and three months of pre-roll.',
+                ]],
+                ['id' => 8, 'component' => 'closing', 'data' => [
+                    'eyebrow' => 'See you in November',
+                    'title' => 'Three days. One signal.',
+                    'cta' => 'hello@summerglow.fest',
+                    'footer' => $owner->name.' — Summer 2026',
+                ]],
+            ],
+        ];
+
+        return json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    }
+
+    private function slideVibrantCover(): string
+    {
+        return <<<'HTML'
+        <!-- Component: cover (vibrant-festival). Fields: title, subtitle, author, date. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="author">Crew</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h1 class="mgf-title-xl mgf-mt-md" data-field="title">Project name</h1>
+          <p class="mgf-subtitle mgf-mt-md" data-field="subtitle">One line about the festival.</p>
+          <p class="mgf-label mgf-mt-lg" data-field="date">Summer 2026</p>
+          <p class="mgf-slide-number" data-field="id">01</p>
+        </section>
+        HTML;
+    }
+
+    private function slideVibrantProblem(): string
+    {
+        return <<<'HTML'
+        <!-- Component: problem (vibrant-festival). Fields: eyebrow, title, body. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="eyebrow">Why now</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">Problem headline</h2>
+          <p class="mgf-body mgf-mt-md" data-field="body">One paragraph framing the cultural moment.</p>
+          <p class="mgf-slide-number" data-field="id">02</p>
+        </section>
+        HTML;
+    }
+
+    private function slideVibrantSolution(): string
+    {
+        return <<<'HTML'
+        <!-- Component: solution (vibrant-festival). Fields: eyebrow, title, body. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="eyebrow">Our answer</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">Solution headline</h2>
+          <p class="mgf-body mgf-mt-md" data-field="body">One paragraph describing the festival concept.</p>
+          <p class="mgf-slide-number" data-field="id">03</p>
+        </section>
+        HTML;
+    }
+
+    private function slideVibrantStats(): string
+    {
+        return <<<'HTML'
+        <!-- Component: stats (vibrant-festival, 4-up). Fields: eyebrow, title, stats[], caption. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="eyebrow">Year one</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">Already oversubscribed</h2>
+          <div class="mgf-stat-group mgf-mt-lg" data-field="stats">
+            <div class="mgf-card-accent">
+              <p class="mgf-stat-value" data-field="value">14,000</p>
+              <p class="mgf-stat-label" data-field="label">tickets sold</p>
+            </div>
+            <div class="mgf-card-accent">
+              <p class="mgf-stat-value" data-field="value">92%</p>
+              <p class="mgf-stat-label" data-field="label">conversion</p>
+            </div>
+            <div class="mgf-card-accent">
+              <p class="mgf-stat-value" data-field="value">180+</p>
+              <p class="mgf-stat-label" data-field="label">acts</p>
+            </div>
+            <div class="mgf-card-accent">
+              <p class="mgf-stat-value" data-field="value">$1.4M</p>
+              <p class="mgf-stat-label" data-field="label">sponsors</p>
+            </div>
+          </div>
+          <p class="mgf-caption mgf-mt-md" data-field="caption">Pre-launch, July 2026.</p>
+          <p class="mgf-slide-number" data-field="id">04</p>
+        </section>
+        HTML;
+    }
+
+    private function slideVibrantFeatures(): string
+    {
+        return <<<'HTML'
+        <!-- Component: features (vibrant-festival, 3-up). Fields: eyebrow, title, features[]. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="eyebrow">What makes it different</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">Three things nobody else is doing</h2>
+          <div class="mgf-grid-3 mgf-mt-lg" data-field="features">
+            <div class="mgf-card">
+              <div class="mgf-feature-icon" data-field="icon">🎤</div>
+              <p class="mgf-feature-title" data-field="title">Audience-curated</p>
+              <p class="mgf-feature-desc" data-field="desc">Voting opens 60 days out.</p>
+            </div>
+            <div class="mgf-card">
+              <div class="mgf-feature-icon" data-field="icon">🎁</div>
+              <p class="mgf-feature-title" data-field="title">Small-batch merch</p>
+              <p class="mgf-feature-desc" data-field="desc">Eight artists, eight designs, every piece numbered.</p>
+            </div>
+            <div class="mgf-card">
+              <div class="mgf-feature-icon" data-field="icon">🌳</div>
+              <p class="mgf-feature-title" data-field="title">Zero-waste site</p>
+              <p class="mgf-feature-desc" data-field="desc">No single-use cups. Compostable everything.</p>
+            </div>
+          </div>
+          <p class="mgf-slide-number" data-field="id">05</p>
+        </section>
+        HTML;
+    }
+
+    private function slideVibrantTimeline(): string
+    {
+        return <<<'HTML'
+        <!-- Component: timeline (vibrant-festival). Fields: eyebrow, title, steps[]. -->
+        <section class="mgf-slide">
+          <p class="mgf-eyebrow" data-field="eyebrow">Run of show</p>
+          <div class="mgf-accent-bar mgf-mt-sm"></div>
+          <h2 class="mgf-title-lg mgf-mt-md" data-field="title">The next 90 days</h2>
+          <ol class="mgf-timeline mgf-mt-lg" data-field="steps">
+            <li class="mgf-timeline-item">
+              <span class="mgf-timeline-dot"></span>
+              <p class="mgf-step-number" data-field="date">Aug</p>
+              <p class="mgf-body" data-field="label">Lineup announcement</p>
+            </li>
+            <li class="mgf-timeline-item">
+              <span class="mgf-timeline-dot"></span>
+              <p class="mgf-step-number" data-field="date">Sep</p>
+              <p class="mgf-body" data-field="label">Early-bird tickets open</p>
+            </li>
+            <li class="mgf-timeline-item">
+              <span class="mgf-timeline-dot"></span>
+              <p class="mgf-step-number" data-field="date">Oct</p>
+              <p class="mgf-body" data-field="label">Site + permit signed off</p>
+            </li>
+            <li class="mgf-timeline-item">
+              <span class="mgf-timeline-dot"></span>
+              <p class="mgf-step-number" data-field="date">Nov</p>
+              <p class="mgf-body" data-field="label">Festival weekend</p>
+            </li>
+          </ol>
+          <p class="mgf-slide-number" data-field="id">06</p>
+        </section>
+        HTML;
+    }
+
+    private function slideVibrantAsk(): string
+    {
+        return <<<'HTML'
+        <!-- Component: ask (vibrant-festival, centered). Fields: eyebrow, title, body. -->
+        <section class="mgf-slide mgf-flex mgf-flex-center">
+          <div class="mgf-text-center" style="max-width: 880px">
+            <p class="mgf-eyebrow" data-field="eyebrow">We need</p>
+            <div class="mgf-accent-bar mgf-mt-sm" style="margin-right:auto; margin-left:auto"></div>
+            <h2 class="mgf-title-xl mgf-mt-md" data-field="title">Closing the sponsor list</h2>
+            <p class="mgf-subtitle mgf-mt-md" data-field="body">Use-of-funds paragraph.</p>
+            <p class="mgf-slide-number" data-field="id">07</p>
+          </div>
+        </section>
+        HTML;
+    }
+
+    private function slideVibrantClosing(): string
+    {
+        return <<<'HTML'
+        <!-- Component: closing (vibrant-festival, centered CTA). Fields: eyebrow, title, cta, footer. -->
+        <section class="mgf-slide mgf-flex mgf-flex-center">
+          <div class="mgf-text-center" style="max-width: 720px">
+            <p class="mgf-eyebrow" data-field="eyebrow">See you in November</p>
+            <div class="mgf-accent-bar mgf-mt-sm" style="margin-right:auto; margin-left:auto"></div>
+            <h2 class="mgf-title-xl mgf-mt-md" data-field="title">Three days. One signal.</h2>
+            <a class="mgf-cta-solid mgf-mt-lg" href="#" data-field="cta_url" data-label-field="cta">hello@project.fest</a>
+            <p class="mgf-caption mgf-mt-md" data-field="footer">Summer 2026</p>
+          </div>
+          <p class="mgf-slide-number" data-field="id">08</p>
         </section>
         HTML;
     }
