@@ -2,26 +2,18 @@
 
 namespace Database\Seeders;
 
-use App\Models\File;
-use App\Models\Template;
-use App\Models\User;
-use Illuminate\Support\Facades\Hash;
-
+/**
+ * File creation is now handled by TemplateSeeder and ProjectSeeder,
+ * which seed UVCP-style file sets per archetype. This seeder remains
+ * as a no-op for backward compatibility (referenced by DatabaseSeeder)
+ * and as a place to attach any future one-off file fixtures.
+ */
 class FileSeeder extends BaseSeeder
 {
     protected function seed(): void
     {
-        $user = User::factory()->create([
-            'name' => 'File Author',
-            'email' => 'files@example.com',
-            'password_hash' => Hash::make('password'),
-        ]);
-
-        $templates = Template::where('visibility', 'public')->limit(3)->get();
-
-        foreach ($templates as $template) {
-            $this->createSampleFiles($template, $user);
-        }
+        // No-op. See TemplateSeeder::createUvcpFiles() and
+        // ProjectSeeder::createUvcpFiles() for the canonical file seeding.
     }
 
     private function createSampleFiles(Template $template, User $user): void

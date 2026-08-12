@@ -2,15 +2,17 @@
 
 namespace Database\Seeders;
 
-use App\Models\File;
 use App\Models\Project;
 use App\Models\Template;
 use App\Models\Type;
 use App\Models\User;
+use Database\Seeders\Concerns\MgfFileBuilders;
 use Illuminate\Support\Facades\Hash;
 
 class ProjectSeeder extends BaseSeeder
 {
+    use MgfFileBuilders;
+
     protected function seed(): void
     {
         $user = User::factory()->create([
@@ -22,37 +24,41 @@ class ProjectSeeder extends BaseSeeder
         $types = Type::all();
         $templates = Template::all();
 
-        $projects = [
+        // Three archetypes drawn from the MGF (Modular Generation Framework)
+        // prompt suite. Each emits style.css + layout.css + data.json +
+        // distinct mgf-* slide-NN.html files per the AI output contract.
+        //
+        //   1. Investor pitch deck  (10 slides: cover · problem · features · stats · ...)
+        //   2. Launch summary       ( 8 slides: cover · stats · timeline · quote · ...)
+        //   3. Scaffolded minimal   ( 2 slides: cover · announcement)
+        $archetypes = [
             [
                 'name' => 'My Business Pitch',
-                'description' => 'A compelling pitch deck for investors',
+                'description' => 'A compelling investor pitch deck for a B2B SaaS startup.',
                 'status' => 'draft',
                 'visibility' => 'private',
-                'tags' => ['business', 'pitch'],
-                'locale' => 'en',
-                'direction' => 'ltr',
+                'tags' => ['business', 'pitch', 'investor'],
+                'archetype' => 'pitch',
             ],
             [
                 'name' => 'Product Launch Plan',
-                'description' => 'Comprehensive product launch presentation',
+                'description' => 'A presentation summarizing the launch plan for our new product.',
                 'status' => 'published',
                 'visibility' => 'public',
-                'tags' => ['product', 'marketing'],
-                'locale' => 'en',
-                'direction' => 'ltr',
+                'tags' => ['product', 'launch', 'marketing'],
+                'archetype' => 'summary',
             ],
             [
                 'name' => 'Annual Report 2026',
-                'description' => 'Company annual report design',
+                'description' => 'A scaffolded annual report presentation in early draft stage.',
                 'status' => 'published',
                 'visibility' => 'public',
                 'tags' => ['business', 'report'],
-                'locale' => 'en',
-                'direction' => 'ltr',
+                'archetype' => 'minimal',
             ],
         ];
 
-        foreach ($projects as $projectData) {
+        foreach ($archetypes as $projectData) {
             $type = $types->where('name', 'presentation')->first();
 
             $project = Project::factory()->create([
@@ -64,45 +70,37 @@ class ProjectSeeder extends BaseSeeder
                 'status' => $projectData['status'],
                 'visibility' => $projectData['visibility'],
                 'tags' => $projectData['tags'],
-                'locale' => $projectData['locale'],
-                'direction' => $projectData['direction'],
+                'locale' => 'en',
+                'direction' => 'ltr',
                 'cloned_at' => $templates->isNotEmpty() ? now() : null,
             ]);
 
-            $this->createProjectFiles($project, $user);
+            $this->createMgfFiles($project, $user, $projectData['archetype']);
         }
 
+        // Three additional generic projects for variety (random factory content).
         Project::factory(3)->create([
             'user_id' => $user->id,
             'template_id' => $templates->isNotEmpty() ? $templates->random()->id : null,
             'cloned_at' => $templates->isNotEmpty() ? now() : null,
         ])->each(function ($project) use ($user) {
-            $this->createProjectFiles($project, $user);
+            $this->createMgfFiles($project, $user, 'minimal');
         });
     }
 
-    private function createProjectFiles(Project $project, User $user): void
+    /**
+     * Build a complete MGF file set for a project based on its archetype.
+     * Delegates to the MgfFileBuilders trait — same files are produced for
+     * any owner (template fork produces a clone with the same file set).
+     */
+    private function createMgfFiles(Project $project, User $user, string $archetype): void
     {
-        $files = [
-            ['layer' => 'meta', 'name' => 'meta.md', 'extension' => 'md', 'content' => "# {$project->name}"],
-            ['layer' => 'context', 'name' => 'context.md', 'extension' => 'md', 'content' => "Context for project"],
-            ['layer' => 'rules', 'name' => 'rules.md', 'extension' => 'md', 'content' => "Project rules"],
-            ['layer' => 'layout', 'name' => 'layout.html', 'extension' => 'html', 'content' => '<div class="layout">{{content}}</div>'],
-            ['layer' => 'style', 'name' => 'style.css', 'extension' => 'css', 'content' => 'body { font-family: system-ui; }'],
-            ['layer' => 'slide', 'name' => 'slide-01.html', 'extension' => 'html', 'content' => '<div class="slide"><h1>Title</h1></div>'],
-        ];
+        $files = match ($archetype) {
+            'pitch'   => $this->pitchFiles($project),
+            'summary' => $this->summaryFiles($project),
+            default   => $this->minimalFiles($project),
+        };
 
-        foreach ($files as $index => $fileData) {
-            File::factory()->create([
-                'project_id' => $project->id,
-                'user_id' => $user->id,
-                'layer' => $fileData['layer'],
-                'name' => $fileData['name'],
-                'extension' => $fileData['extension'],
-                'sort_order' => $index,
-                'content' => $fileData['content'],
-                'size_bytes' => strlen($fileData['content']),
-            ]);
-        }
+        $this->persistFilesOnProject($project, $user, $files);
     }
 }

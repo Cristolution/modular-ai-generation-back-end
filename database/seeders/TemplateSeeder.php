@@ -2,14 +2,16 @@
 
 namespace Database\Seeders;
 
-use App\Models\File;
 use App\Models\Template;
 use App\Models\Type;
 use App\Models\User;
+use Database\Seeders\Concerns\MgfFileBuilders;
 use Illuminate\Support\Facades\Hash;
 
 class TemplateSeeder extends BaseSeeder
 {
+    use MgfFileBuilders;
+
     protected function seed(): void
     {
         $user = User::factory()->create([
@@ -20,6 +22,14 @@ class TemplateSeeder extends BaseSeeder
 
         $types = Type::all();
 
+        // Five public templates map to MGF archetypes. Forks carry the
+        // exact same file set the template has — see MgfFileBuilders trait.
+        //
+        //   - Business Pitch Deck       → pitch   (10 slides + theme variant)
+        //   - Creative Portfolio        → summary ( 8 slides)
+        //   - Annual Report Poster      → minimal ( 2 slides)
+        //   - Social Media Carousel     → minimal ( 2 slides)
+        //   - Arabic Business Proposal  → pitch   (10 slides, RTL)
         $templates = [
             [
                 'name' => 'Business Pitch Deck',
@@ -29,6 +39,7 @@ class TemplateSeeder extends BaseSeeder
                 'tags' => ['business', 'pitch', 'professional'],
                 'locale' => 'en',
                 'direction' => 'ltr',
+                'archetype' => 'pitch',
             ],
             [
                 'name' => 'Creative Portfolio',
@@ -38,6 +49,7 @@ class TemplateSeeder extends BaseSeeder
                 'tags' => ['creative', 'portfolio', 'minimal'],
                 'locale' => 'en',
                 'direction' => 'ltr',
+                'archetype' => 'summary',
             ],
             [
                 'name' => 'Annual Report Poster',
@@ -47,6 +59,7 @@ class TemplateSeeder extends BaseSeeder
                 'tags' => ['business', 'report', 'professional'],
                 'locale' => 'en',
                 'direction' => 'ltr',
+                'archetype' => 'minimal',
             ],
             [
                 'name' => 'Social Media Carousel',
@@ -56,15 +69,17 @@ class TemplateSeeder extends BaseSeeder
                 'tags' => ['social', 'marketing', 'colorful'],
                 'locale' => 'en',
                 'direction' => 'ltr',
+                'archetype' => 'minimal',
             ],
             [
                 'name' => 'Arabic Business Proposal',
-                'description' => ' RTL template for Arabic business proposals',
+                'description' => 'RTL template for Arabic business proposals',
                 'thumbnail_url' => 'https://picsum.photos/seed/arabic/400/300',
                 'visibility' => 'public',
                 'tags' => ['business', 'arabic', 'rtl'],
                 'locale' => 'ar',
                 'direction' => 'rtl',
+                'archetype' => 'pitch',
             ],
         ];
 
@@ -76,53 +91,38 @@ class TemplateSeeder extends BaseSeeder
                 $type = $types->where('name', 'poster')->first();
             }
 
-            $template = Template::factory()->create([
+            $archetype = $templateData['archetype'];
+            unset($templateData['archetype']);
+
+            $template = Template::factory()->create(array_merge($templateData, [
                 'user_id' => $user->id,
                 'type_id' => $type->id,
-                'name' => $templateData['name'],
-                'description' => $templateData['description'],
-                'thumbnail_url' => $templateData['thumbnail_url'],
-                'visibility' => $templateData['visibility'],
-                'tags' => $templateData['tags'],
-                'locale' => $templateData['locale'],
-                'direction' => $templateData['direction'],
                 'fork_count' => rand(0, 20),
                 'upvote_count' => rand(0, 50),
-            ]);
+            ]));
 
-            $this->createSampleFiles($template, $user);
+            $this->createMgfFiles($template, $user, $archetype);
         }
 
-        Template::factory(5)->public()->create()->each(function ($template) {
-            File::factory(3)->create([
-                'template_id' => $template->id,
-                'user_id' => $template->user_id,
-            ]);
+        // Five additional generic templates for variety.
+        Template::factory(5)->public()->create()->each(function ($template) use ($user) {
+            $this->createMgfFiles($template, $user, 'minimal');
         });
     }
 
-    private function createSampleFiles(Template $template, User $user): void
+    /**
+     * Build a complete MGF file set for a template based on its archetype.
+     * Same call as ProjectSeeder produces project files — forking a template
+     * gives a new project the exact file set the template carried.
+     */
+    private function createMgfFiles(Template $template, User $user, string $archetype): void
     {
-        $files = [
-            ['layer' => 'meta', 'name' => 'meta.md', 'extension' => 'md', 'content' => "# {$template->name}\n\n{$template->description}"],
-            ['layer' => 'context', 'name' => 'context.md', 'extension' => 'md', 'content' => "This template is designed for {$template->name}."],
-            ['layer' => 'rules', 'name' => 'rules.md', 'extension' => 'md', 'content' => "Style guidelines for this template."],
-            ['layer' => 'layout', 'name' => 'layout.html', 'extension' => 'html', 'content' => '<div class="layout">{{content}}</div>'],
-            ['layer' => 'style', 'name' => 'style.css', 'extension' => 'css', 'content' => 'body { font-family: system-ui; }'],
-            ['layer' => 'slide', 'name' => 'slide-01.html', 'extension' => 'html', 'content' => '<div class="slide"><h1>Welcome</h1></div>'],
-        ];
+        $files = match ($archetype) {
+            'pitch'   => $this->pitchFiles($template),
+            'summary' => $this->summaryFiles($template),
+            default   => $this->minimalFiles($template),
+        };
 
-        foreach ($files as $index => $fileData) {
-            File::factory()->create([
-                'template_id' => $template->id,
-                'user_id' => $user->id,
-                'layer' => $fileData['layer'],
-                'name' => $fileData['name'],
-                'extension' => $fileData['extension'],
-                'sort_order' => $index,
-                'content' => $fileData['content'],
-                'size_bytes' => strlen($fileData['content']),
-            ]);
-        }
+        $this->persistFilesOnTemplate($template, $user, $files);
     }
 }
