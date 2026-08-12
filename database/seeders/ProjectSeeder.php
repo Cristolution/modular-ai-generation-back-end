@@ -24,13 +24,15 @@ class ProjectSeeder extends BaseSeeder
         $types = Type::all();
         $templates = Template::all();
 
-        // Three archetypes drawn from the MGF (Modular Generation Framework)
-        // prompt suite. Each emits style.css + layout.css + data.json +
+        // Four archetypes drawn from the MGF (Modular Generation Framework)
+        // prompt suite. Each emits style.css + layout file + data.json +
         // distinct mgf-* slide-NN.html files per the AI output contract.
         //
-        //   1. Investor pitch deck  (10 slides: cover · problem · features · stats · ...)
-        //   2. Launch summary       ( 8 slides: cover · stats · timeline · quote · ...)
-        //   3. Scaffolded minimal   ( 2 slides: cover · announcement)
+        //   1. Investor pitch deck   (10 slides: cover · problem · features · stats · ...)
+        //   2. Launch summary        ( 8 slides: cover · stats · timeline · quote · ...)
+        //   3. Scaffolded minimal    ( 2 slides: cover · announcement)
+        //   4. Marketing website     ( 8 sections: hero · features · stats · testimonial · pricing · faq · cta · contact)
+        //      Uses layout.html instead of layout.css; output_target = 'website'.
         $archetypes = [
             [
                 'name' => 'My Business Pitch',
@@ -39,6 +41,7 @@ class ProjectSeeder extends BaseSeeder
                 'visibility' => 'private',
                 'tags' => ['business', 'pitch', 'investor'],
                 'archetype' => 'pitch',
+                'type' => 'presentation',
             ],
             [
                 'name' => 'Product Launch Plan',
@@ -47,6 +50,7 @@ class ProjectSeeder extends BaseSeeder
                 'visibility' => 'public',
                 'tags' => ['product', 'launch', 'marketing'],
                 'archetype' => 'summary',
+                'type' => 'presentation',
             ],
             [
                 'name' => 'Annual Report 2026',
@@ -55,11 +59,21 @@ class ProjectSeeder extends BaseSeeder
                 'visibility' => 'public',
                 'tags' => ['business', 'report'],
                 'archetype' => 'minimal',
+                'type' => 'presentation',
+            ],
+            [
+                'name' => 'Acme Marketing Site',
+                'description' => 'A scrollable single-page marketing website with hero, features, stats, testimonial, pricing, FAQ, CTA, and contact sections.',
+                'status' => 'published',
+                'visibility' => 'public',
+                'tags' => ['marketing', 'website', 'landing-page'],
+                'archetype' => 'website',
+                'type' => 'website',
             ],
         ];
 
         foreach ($archetypes as $projectData) {
-            $type = $types->where('name', 'presentation')->first();
+            $type = $types->where('name', $projectData['type'])->first() ?? $types->where('name', 'presentation')->first();
 
             $project = Project::factory()->create([
                 'user_id' => $user->id,
@@ -98,6 +112,7 @@ class ProjectSeeder extends BaseSeeder
         $files = match ($archetype) {
             'pitch'   => $this->pitchFiles($project),
             'summary' => $this->summaryFiles($project),
+            'website' => $this->websiteFiles($project),
             default   => $this->minimalFiles($project),
         };
 

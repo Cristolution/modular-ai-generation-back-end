@@ -22,14 +22,15 @@ class TemplateSeeder extends BaseSeeder
 
         $types = Type::all();
 
-        // Five public templates map to MGF archetypes. Forks carry the
+        // Six public templates map to MGF archetypes. Forks carry the
         // exact same file set the template has — see MgfFileBuilders trait.
         //
-        //   - Business Pitch Deck       → pitch   (10 slides + theme variant)
-        //   - Creative Portfolio        → summary ( 8 slides)
-        //   - Annual Report Poster      → minimal ( 2 slides)
-        //   - Social Media Carousel     → minimal ( 2 slides)
-        //   - Arabic Business Proposal  → pitch   (10 slides, RTL)
+        //   - Business Pitch Deck       → pitch    (10 slides + theme variant)
+        //   - Creative Portfolio        → summary  ( 8 slides)
+        //   - Annual Report Poster      → minimal  ( 2 slides)
+        //   - Social Media Carousel     → minimal  ( 2 slides)
+        //   - Arabic Business Proposal  → pitch    (10 slides, RTL)
+        //   - Marketing Site Website    → website  ( 8 sections: hero · features · stats · testimonial · pricing · faq · cta · contact)
         $templates = [
             [
                 'name' => 'Business Pitch Deck',
@@ -40,6 +41,7 @@ class TemplateSeeder extends BaseSeeder
                 'locale' => 'en',
                 'direction' => 'ltr',
                 'archetype' => 'pitch',
+                'type' => 'presentation',
             ],
             [
                 'name' => 'Creative Portfolio',
@@ -50,6 +52,7 @@ class TemplateSeeder extends BaseSeeder
                 'locale' => 'en',
                 'direction' => 'ltr',
                 'archetype' => 'summary',
+                'type' => 'presentation',
             ],
             [
                 'name' => 'Annual Report Poster',
@@ -60,6 +63,7 @@ class TemplateSeeder extends BaseSeeder
                 'locale' => 'en',
                 'direction' => 'ltr',
                 'archetype' => 'minimal',
+                'type' => 'presentation',
             ],
             [
                 'name' => 'Social Media Carousel',
@@ -70,6 +74,7 @@ class TemplateSeeder extends BaseSeeder
                 'locale' => 'en',
                 'direction' => 'ltr',
                 'archetype' => 'minimal',
+                'type' => 'presentation',
             ],
             [
                 'name' => 'Arabic Business Proposal',
@@ -80,19 +85,27 @@ class TemplateSeeder extends BaseSeeder
                 'locale' => 'ar',
                 'direction' => 'rtl',
                 'archetype' => 'pitch',
+                'type' => 'presentation',
+            ],
+            [
+                'name' => 'Marketing Site Website',
+                'description' => 'A scrollable single-page marketing website with hero, features, stats, testimonial, pricing, FAQ, CTA, and contact sections.',
+                'thumbnail_url' => 'https://picsum.photos/seed/website/400/300',
+                'visibility' => 'public',
+                'tags' => ['marketing', 'website', 'landing-page'],
+                'locale' => 'en',
+                'direction' => 'ltr',
+                'archetype' => 'website',
+                'type' => 'website',
             ],
         ];
 
         foreach ($templates as $templateData) {
-            $type = $types->where('name', 'presentation')->first();
-            if (str_contains(strtolower($templateData['name']), 'carousel')) {
-                $type = $types->where('name', 'carousel')->first();
-            } elseif (str_contains(strtolower($templateData['name']), 'poster')) {
-                $type = $types->where('name', 'poster')->first();
-            }
+            $type = $types->where('name', $templateData['type'])->first()
+                ?? $types->where('name', 'presentation')->first();
 
             $archetype = $templateData['archetype'];
-            unset($templateData['archetype']);
+            unset($templateData['archetype'], $templateData['type']);
 
             $template = Template::factory()->create(array_merge($templateData, [
                 'user_id' => $user->id,
@@ -120,6 +133,7 @@ class TemplateSeeder extends BaseSeeder
         $files = match ($archetype) {
             'pitch'   => $this->pitchFiles($template),
             'summary' => $this->summaryFiles($template),
+            'website' => $this->websiteFiles($template),
             default   => $this->minimalFiles($template),
         };
 

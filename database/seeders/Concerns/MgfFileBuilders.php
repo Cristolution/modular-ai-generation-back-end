@@ -89,6 +89,42 @@ trait MgfFileBuilders
         ];
     }
 
+    /**
+     * Website archetype — a long-scroll, single-page website where each
+     * "slide" is a section in the page rather than a viewport in a
+     * deck. The renderer concatenates every slide-NN.html into one
+     * continuous scroll wrapped in `layout.html`.
+     *
+     * Differences vs. the deck archetypes:
+     * - Uses `layout.html` (HTML wrapper) instead of `layout.css`.
+     *   The editor's `useAssemblePreview.ts` substitutes `{{slides}}`
+     *   with the concatenation of all slide bodies.
+     * - No slide counter / no `mgf-slide-number` — scrollable pages
+     *   don't have a 1-of-N footer.
+     * - Sections are designed to stack: each one fills the viewport
+     *   width, not a fixed slide canvas.
+     */
+    protected function websiteFiles($owner): array
+    {
+        return [
+            ['layer' => 'meta',    'name' => 'meta.md',     'extension' => 'md',   'content' => "# {$owner->name}\n\n{$owner->description}"],
+            ['layer' => 'context', 'name' => 'context.md',  'extension' => 'md',   'content' => $this->websiteContext()],
+            ['layer' => 'rules',   'name' => 'rules.md',    'extension' => 'md',   'content' => $this->rulesFor('website')],
+            ['layer' => 'style',   'name' => 'style.css',   'extension' => 'css',  'content' => $this->websiteStyleCss()],
+            ['layer' => 'layout',  'name' => 'layout.html', 'extension' => 'html', 'content' => $this->websiteLayoutHtml()],
+            ['layer' => 'content', 'name' => 'data.json',   'extension' => 'json', 'content' => $this->websiteDataJson($owner)],
+
+            ['layer' => 'slide', 'name' => 'slide-01.html', 'extension' => 'html', 'content' => $this->slideWebsiteHero()],
+            ['layer' => 'slide', 'name' => 'slide-02.html', 'extension' => 'html', 'content' => $this->slideWebsiteFeatures()],
+            ['layer' => 'slide', 'name' => 'slide-03.html', 'extension' => 'html', 'content' => $this->slideWebsiteStats()],
+            ['layer' => 'slide', 'name' => 'slide-04.html', 'extension' => 'html', 'content' => $this->slideWebsiteTestimonial()],
+            ['layer' => 'slide', 'name' => 'slide-05.html', 'extension' => 'html', 'content' => $this->slideWebsitePricing()],
+            ['layer' => 'slide', 'name' => 'slide-06.html', 'extension' => 'html', 'content' => $this->slideWebsiteFaq()],
+            ['layer' => 'slide', 'name' => 'slide-07.html', 'extension' => 'html', 'content' => $this->slideWebsiteCta()],
+            ['layer' => 'slide', 'name' => 'slide-08.html', 'extension' => 'html', 'content' => $this->slideWebsiteContact()],
+        ];
+    }
+
     /** Persist the file array against a project. */
     protected function persistFilesOnProject(\App\Models\Project $project, User $user, array $files): void
     {
@@ -177,9 +213,11 @@ trait MgfFileBuilders
 
     private function rulesFor(string $archetype): string
     {
-        $prefix = $archetype === 'pitch'
-            ? "Slide titles under 8 words.\nMax 40 words per slide body."
-            : "Use bullets and tables.\nKeep prose under 40 words per slide.";
+        $prefix = match ($archetype) {
+            'pitch'   => "Slide titles under 8 words.\nMax 40 words per slide body.",
+            'website' => "Section titles under 10 words.\nSections are full-width bands of a single scrollable page — no fixed viewport.\nNo mgf-slide-number footer (scrollable pages do not have a 1-of-N counter).",
+            default   => "Use bullets and tables.\nKeep prose under 40 words per slide.",
+        };
 
         return <<<MD
         # Generation Rules
@@ -187,7 +225,7 @@ trait MgfFileBuilders
         {$prefix}
         - Components use only mgf-* classes — no inline styles, no hardcoded colors
         - All visual values live in style.css as --mgf-* tokens
-        - All mgf-* class behavior lives in layout.css
+        - All mgf-* class behavior lives in layout.css (decks) or layout.html (websites)
         - data.json must preserve the exact _meta + slides[] schema
         - Slide numbers are zero-padded two digits: slide-01.html, slide-02.html, ...
         MD;
@@ -1505,6 +1543,497 @@ trait MgfFileBuilders
             </div>
           </div>
           <p class="mgf-slide-number" data-field="id">02</p>
+        </section>
+        HTML;
+    }
+
+    // ── Website archetype — scrollable single-page site ─────────────────
+
+    private function websiteContext(): string
+    {
+        return <<<MD
+        # Project Context
+
+        ## Purpose
+        Marketing website for a single product. One continuous scrollable
+        page. Each slide-NN.html is a section in the page (hero, features,
+        stats, testimonials, pricing, FAQ, CTA, contact), not a viewport
+        in a deck.
+
+        ## Audience
+        Prospects and customers evaluating the product. The page must
+        communicate value in 5 seconds and convert with a clear CTA.
+
+        ## Brand voice
+        Confident, specific, outcome-focused. Lead with benefits, support
+        with numbers, close with a CTA.
+
+        ## Visual constraints
+        - Palette: near-black surface + bright accent + warm white text
+        - Sections are full-width bands — never fixed slide canvases
+        - One CTA per section, max
+        - No `mgf-slide-number` (scrollable pages don't have a counter)
+
+        ## Sections (in order)
+        1. Hero — headline + sub + primary CTA + secondary link
+        2. Features — 3-up or 4-up grid of value props
+        3. Stats — numbers that build credibility
+        4. Testimonial — single large quote with attribution
+        5. Pricing — 3-tier comparison
+        6. FAQ — 4-6 question/answer pairs
+        7. Closing CTA — repeat the main CTA
+        8. Contact — form / email / phone
+        MD;
+    }
+
+    private function websiteStyleCss(): string
+    {
+        // Same token shape as deck archetypes, with slightly tighter
+        // type and a wider spacing scale suited to full-width sections.
+        return <<<'CSS'
+        :root {
+          --mgf-color-bg:            #0A0E1A;
+          --mgf-color-surface:       #111726;
+          --mgf-color-surface-2:     #1A2238;
+          --mgf-color-border:        #1F2940;
+          --mgf-color-border-strong: #2E3A5A;
+          --mgf-color-text-primary:  #F4F6FA;
+          --mgf-color-text-secondary:#94A3B8;
+          --mgf-color-text-inverse:  #0A0E1A;
+          --mgf-color-accent:        #22D3EE;
+          --mgf-color-accent-soft:   #0E2A3A;
+          --mgf-color-accent-2:      #A78BFA;
+
+          --mgf-font-display: 'Inter', system-ui, sans-serif;
+          --mgf-font-body:    'Inter', system-ui, sans-serif;
+          --mgf-font-mono:    'JetBrains Mono', ui-monospace, monospace;
+          --mgf-text-xs:   0.8125rem;
+          --mgf-text-sm:   0.9375rem;
+          --mgf-text-base: 1.0625rem;
+          --mgf-text-lg:   1.25rem;
+          --mgf-text-xl:   1.75rem;
+          --mgf-text-2xl:  2.5rem;
+          --mgf-text-3xl:  3.5rem;
+          --mgf-text-4xl:  4.5rem;
+          --mgf-weight-normal: 400;
+          --mgf-weight-medium: 500;
+          --mgf-weight-bold:   700;
+          --mgf-leading-tight:  1.15;
+          --mgf-leading-normal: 1.6;
+          --mgf-leading-loose:  1.8;
+          --mgf-tracking-tight:  -0.03em;
+          --mgf-tracking-normal: 0em;
+          --mgf-tracking-wide:   0.08em;
+
+          --mgf-space-1:  0.25rem;
+          --mgf-space-2:  0.5rem;
+          --mgf-space-3:  0.75rem;
+          --mgf-space-4:  1rem;
+          --mgf-space-6:  1.5rem;
+          --mgf-space-8:  2rem;
+          --mgf-space-12: 3rem;
+          --mgf-space-16: 5rem;
+          --mgf-space-24: 8rem;
+
+          --mgf-radius-sm: 6px;
+          --mgf-radius-md: 10px;
+          --mgf-radius-lg: 18px;
+          --mgf-radius-xl: 28px;
+
+          --mgf-slide-w:     1280px;
+          --mgf-slide-h:     720px;
+          --mgf-slide-pad-x: 80px;
+          --mgf-slide-pad-y: 60px;
+
+          --mgf-accent-line: 3px solid var(--mgf-color-accent);
+          --mgf-divider:     1px solid var(--mgf-color-border);
+        }
+        CSS;
+    }
+
+    private function websiteLayoutHtml(): string
+    {
+        // The editor's `useAssemblePreview.ts` substitutes `{{slides}}`
+        // with the concatenated bodies of every slide-NN.html. This
+        // wrapper provides the outer page chrome (top nav, footer) and
+        // the sectioning container. Data placeholders like `{{title}}`
+        // are resolved from data.json.
+        return <<<'HTML'
+        <!--
+          Website layout wrapper. Concatenated slide bodies slot into
+          {{slides}}. Page chrome (nav + footer) is part of the wrapper
+          so each section can stay focused on its content.
+        -->
+        <div class="mgf-website">
+          <header class="mgf-website-nav">
+            <a class="mgf-website-brand" href="#top" data-field="brand">{{title}}</a>
+            <nav class="mgf-website-links">
+              <a href="#features">Features</a>
+              <a href="#pricing">Pricing</a>
+              <a href="#faq">FAQ</a>
+              <a class="mgf-cta-solid" href="#cta" data-field="nav_cta">Get started</a>
+            </nav>
+          </header>
+          <main id="top">
+            {{slides}}
+          </main>
+          <footer class="mgf-website-footer">
+            <p class="mgf-caption" data-field="footer">© 2026 {{title}} · Built with MGF</p>
+          </footer>
+        </div>
+        HTML;
+    }
+
+    private function websiteDataJson($owner): string
+    {
+        $payload = [
+            '_meta' => [
+                'project' => $owner->name,
+                'version' => '1.0',
+                'output_target' => 'website',
+                'format' => 'scrollable',
+                'total_slides' => 8,
+                'components_used' => [
+                    'website-hero', 'features', 'stats',
+                    'testimonial', 'pricing', 'faq',
+                    'website-cta', 'website-contact',
+                ],
+            ],
+            // Top-level scalars resolve `{{title}}`, `{{brand}}`, etc.
+            // across layout.html. The renderer flattens these into
+            // `--content-*` CSS variables and substitutes `{{tokens}}`.
+            'title'   => $owner->name,
+            'tagline' => $owner->description,
+            'brand'   => $owner->name,
+            'footer'  => '© 2026 '.$owner->name.' · Built with MGF',
+            'nav_cta' => 'Get started',
+            'slides'  => [
+                ['id' => 1, 'component' => 'website-hero', 'data' => [
+                    'eyebrow'  => 'Now in public beta',
+                    'title'    => 'Ship Faster. Sleep More.',
+                    'subtitle' => 'The single layer that connects your tools, your team, and your deadlines. One onboarding. Zero context switching.',
+                    'primary_cta'     => 'Start free trial',
+                    'primary_cta_url' => '#cta',
+                    'secondary_cta'   => 'Watch the 2-min demo',
+                    'secondary_cta_url' => '#features',
+                ]],
+                ['id' => 2, 'component' => 'features', 'data' => [
+                    'title'    => 'Everything you need, nothing you do not',
+                    'subtitle' => 'Built around the way teams already work — no migration, no training, no surprises.',
+                    'features' => [
+                        ['icon' => '⚡', 'title' => 'Instant setup',   'desc' => 'Connect your tools in 4 minutes. We surface the work immediately.'],
+                        ['icon' => '🔗', 'title' => 'Unified routing', 'desc' => 'Tasks flow between apps without copy-paste or double entry.'],
+                        ['icon' => '📊', 'title' => 'Live visibility', 'desc' => 'See blockers before they hit your sprint review.'],
+                        ['icon' => '🛡️', 'title' => 'SOC2 ready',      'desc' => 'Audit trails, SSO, and role-based access from day one.'],
+                    ],
+                ]],
+                ['id' => 3, 'component' => 'stats', 'data' => [
+                    'title' => 'Teams already shipping with us',
+                    'stats' => [
+                        ['value' => '340',  'label' => 'Teams active'],
+                        ['value' => '4.1M', 'label' => 'Tasks routed'],
+                        ['value' => '92%',  'label' => 'Renewal rate'],
+                        ['value' => '11h',  'label' => 'Saved per week'],
+                    ],
+                    'caption' => 'Aggregated across all customer accounts, Q2 2026.',
+                ]],
+                ['id' => 4, 'component' => 'testimonial', 'data' => [
+                    'quote'   => 'We replaced four tools with this. The team adopted it in a week.',
+                    'author'  => 'Priya Nair',
+                    'role'    => 'Head of Engineering',
+                    'company' => 'Helio',
+                    'avatar'  => '',
+                ]],
+                ['id' => 5, 'component' => 'pricing', 'data' => [
+                    'title' => 'Simple pricing. Scales with you.',
+                    'plans' => [
+                        ['name' => 'Starter',    'price' => '$0',  'period' => 'forever',  'features' => ['Up to 5 seats', 'Core integrations'], 'cta' => 'Start free'],
+                        ['name' => 'Team',       'price' => '$12', 'period' => 'seat / mo', 'features' => ['Up to 50 seats', 'AI features', 'Analytics'], 'cta' => 'Start trial'],
+                        ['name' => 'Enterprise', 'price' => 'Custom', 'period' => '',          'features' => ['Unlimited seats', 'SSO', 'SLA', 'Dedicated CSM'], 'cta' => 'Talk to sales'],
+                    ],
+                ]],
+                ['id' => 6, 'component' => 'faq', 'data' => [
+                    'title' => 'Frequently asked',
+                    'items' => [
+                        ['q' => 'How long does setup take?', 'a' => 'Most teams complete the integration in under ten minutes.'],
+                        ['q' => 'Do you support SSO?',         'a' => 'Yes — SAML, OIDC, and Google Workspace out of the box.'],
+                        ['q' => 'Can I export my data?',       'a' => 'Anytime, in CSV or JSON. No lock-in.'],
+                        ['q' => 'What about compliance?',      'a' => 'SOC2 Type II, GDPR-ready, with full audit logging.'],
+                        ['q' => 'Is there a free plan?',       'a' => 'Yes — Starter is free forever for up to 5 seats.'],
+                        ['q' => 'How do I cancel?',            'a' => 'One click in settings. We will not ask why.'],
+                    ],
+                ]],
+                ['id' => 7, 'component' => 'website-cta', 'data' => [
+                    'eyebrow' => 'Ready when you are',
+                    'title'   => 'Stop juggling tools. Start shipping.',
+                    'body'    => 'Free 14-day trial. No credit card. Onboarding included for teams of 5+.',
+                    'cta'     => 'Start your trial',
+                    'cta_url' => '#cta',
+                ]],
+                ['id' => 8, 'component' => 'website-contact', 'data' => [
+                    'title'   => 'Talk to us',
+                    'subtitle' => 'Email, call, or book a 15-minute walkthrough. We reply within one business day.',
+                    'email'   => 'hello@acme.io',
+                    'phone'   => '+1 (415) 555-0142',
+                    'address' => '548 Market St, San Francisco, CA',
+                ]],
+            ],
+        ];
+
+        return json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    }
+
+    private function slideWebsiteHero(): string
+    {
+        return <<<'HTML'
+        <!--
+          Component: website-hero
+          Fields: eyebrow, title, subtitle, primary_cta, primary_cta_url,
+                  secondary_cta, secondary_cta_url
+          Layout: full-width hero band — eyebrow + headline + sub + 2 CTAs
+        -->
+        <section class="mgf-website-hero" id="hero">
+          <p class="mgf-eyebrow" data-field="eyebrow">Now in public beta</p>
+          <h1 class="mgf-website-hero-title" data-field="title">Ship Faster. Sleep More.</h1>
+          <p class="mgf-website-hero-sub" data-field="subtitle">One line of subhead context, max 24 words.</p>
+          <div class="mgf-website-hero-ctas">
+            <a class="mgf-cta-solid mgf-cta-lg" href="#" data-field="primary_cta_url" data-label-field="primary_cta">Primary CTA</a>
+            <a class="mgf-cta" href="#" data-field="secondary_cta_url" data-label-field="secondary_cta">Secondary link →</a>
+          </div>
+        </section>
+        HTML;
+    }
+
+    private function slideWebsiteFeatures(): string
+    {
+        return <<<'HTML'
+        <!--
+          Component: features (website variant — 4-up grid)
+          Fields: title, subtitle, features[]{icon, title, desc}
+          Layout: section header + auto-fit grid of feature cards
+        -->
+        <section class="mgf-website-section" id="features">
+          <header class="mgf-website-section-header">
+            <p class="mgf-eyebrow">Features</p>
+            <h2 class="mgf-website-section-title" data-field="title">Everything you need</h2>
+            <p class="mgf-website-section-sub" data-field="subtitle">One line of framing.</p>
+          </header>
+          <div class="mgf-grid-4" data-field="features">
+            <div class="mgf-card">
+              <div class="mgf-feature-icon" data-field="icon">⚡</div>
+              <p class="mgf-feature-title" data-field="title">Pillar 1</p>
+              <p class="mgf-feature-desc" data-field="desc">Description.</p>
+            </div>
+            <div class="mgf-card">
+              <div class="mgf-feature-icon" data-field="icon">🔗</div>
+              <p class="mgf-feature-title" data-field="title">Pillar 2</p>
+              <p class="mgf-feature-desc" data-field="desc">Description.</p>
+            </div>
+            <div class="mgf-card">
+              <div class="mgf-feature-icon" data-field="icon">📊</div>
+              <p class="mgf-feature-title" data-field="title">Pillar 3</p>
+              <p class="mgf-feature-desc" data-field="desc">Description.</p>
+            </div>
+            <div class="mgf-card">
+              <div class="mgf-feature-icon" data-field="icon">🛡️</div>
+              <p class="mgf-feature-title" data-field="title">Pillar 4</p>
+              <p class="mgf-feature-desc" data-field="desc">Description.</p>
+            </div>
+          </div>
+        </section>
+        HTML;
+    }
+
+    private function slideWebsiteStats(): string
+    {
+        return <<<'HTML'
+        <!--
+          Component: stats (website variant — 4-up on a tinted band)
+          Fields: title, stats[]{value, label}, caption
+          Layout: full-width accent-soft band with 4 stat cards + caption
+        -->
+        <section class="mgf-website-section mgf-bg-accent-soft" id="stats">
+          <header class="mgf-website-section-header">
+            <p class="mgf-eyebrow">By the numbers</p>
+            <h2 class="mgf-website-section-title" data-field="title">Proof points</h2>
+          </header>
+          <div class="mgf-stat-group mgf-mt-lg" data-field="stats">
+            <div class="mgf-card-accent">
+              <p class="mgf-stat-value" data-field="value">$1.2M</p>
+              <p class="mgf-stat-label" data-field="label">ARR</p>
+            </div>
+            <div class="mgf-card-accent">
+              <p class="mgf-stat-value" data-field="value">340</p>
+              <p class="mgf-stat-label" data-field="label">Teams</p>
+            </div>
+            <div class="mgf-card-accent">
+              <p class="mgf-stat-value" data-field="value">94%</p>
+              <p class="mgf-stat-label" data-field="label">Retention</p>
+            </div>
+            <div class="mgf-card-accent">
+              <p class="mgf-stat-value" data-field="value">11h</p>
+              <p class="mgf-stat-label" data-field="label">Saved / week</p>
+            </div>
+          </div>
+          <p class="mgf-caption mgf-text-center mgf-mt-md" data-field="caption">All figures as of Q2 2026.</p>
+        </section>
+        HTML;
+    }
+
+    private function slideWebsiteTestimonial(): string
+    {
+        return <<<'HTML'
+        <!--
+          Component: testimonial (website variant — large centered quote)
+          Fields: quote, author, role, company, avatar
+          Layout: large quote mark + italic body + avatar + attribution row
+        -->
+        <section class="mgf-website-section" id="testimonial">
+          <div class="mgf-website-testimonial">
+            <span class="mgf-quote-mark" aria-hidden="true">"</span>
+            <p class="mgf-quote-text mgf-text-center" data-field="quote">Quote goes here. One short paragraph that captures the value in the customer's own words.</p>
+            <div class="mgf-quote-author mgf-flex-center">
+              <div class="mgf-avatar-lg"><img data-field="avatar" src="" alt=""/></div>
+              <div>
+                <p class="mgf-quote-name" data-field="author">Author name</p>
+                <p class="mgf-quote-title" data-field="role">Role</p>
+                <p class="mgf-quote-title" data-field="company">Company</p>
+              </div>
+            </div>
+          </div>
+        </section>
+        HTML;
+    }
+
+    private function slideWebsitePricing(): string
+    {
+        return <<<'HTML'
+        <!--
+          Component: pricing (website variant — 3-tier, middle tier featured)
+          Fields: title, plans[]{name, price, period, features[], cta}
+          Layout: 3 columns; middle plan highlighted with accent border
+        -->
+        <section class="mgf-website-section" id="pricing">
+          <header class="mgf-website-section-header">
+            <p class="mgf-eyebrow">Pricing</p>
+            <h2 class="mgf-website-section-title" data-field="title">Plans</h2>
+          </header>
+          <div class="mgf-grid-3 mgf-mt-lg" data-field="plans">
+            <div class="mgf-card">
+              <p class="mgf-card-label" data-field="name">Starter</p>
+              <p class="mgf-price" data-field="price">$0</p>
+              <p class="mgf-price-period" data-field="period">forever</p>
+              <ul class="mgf-list mgf-mt-md">
+                <li data-field="features">Feature 1</li>
+                <li data-field="features">Feature 2</li>
+              </ul>
+              <a class="mgf-cta-solid mgf-mt-md" href="#" data-field="cta_url" data-label-field="cta">Start free</a>
+            </div>
+            <div class="mgf-card mgf-card-accent">
+              <p class="mgf-card-label" data-field="name">Team</p>
+              <p class="mgf-price" data-field="price">$12</p>
+              <p class="mgf-price-period" data-field="period">seat / mo</p>
+              <ul class="mgf-list mgf-mt-md">
+                <li data-field="features">Feature 1</li>
+                <li data-field="features">Feature 2</li>
+                <li data-field="features">Feature 3</li>
+              </ul>
+              <a class="mgf-cta-solid mgf-mt-md" href="#" data-field="cta_url" data-label-field="cta">Start trial</a>
+            </div>
+            <div class="mgf-card">
+              <p class="mgf-card-label" data-field="name">Enterprise</p>
+              <p class="mgf-price" data-field="price">Custom</p>
+              <p class="mgf-price-period" data-field="period"></p>
+              <ul class="mgf-list mgf-mt-md">
+                <li data-field="features">SSO</li>
+                <li data-field="features">SLA</li>
+                <li data-field="features">Dedicated CSM</li>
+              </ul>
+              <a class="mgf-cta-solid mgf-mt-md" href="#" data-field="cta_url" data-label-field="cta">Talk to sales</a>
+            </div>
+          </div>
+        </section>
+        HTML;
+    }
+
+    private function slideWebsiteFaq(): string
+    {
+        return <<<'HTML'
+        <!--
+          Component: faq (website variant — single-column list)
+          Fields: title, items[]{q, a}
+          Layout: narrow centered column with divider-separated rows
+        -->
+        <section class="mgf-website-section" id="faq">
+          <header class="mgf-website-section-header">
+            <p class="mgf-eyebrow">FAQ</p>
+            <h2 class="mgf-website-section-title" data-field="title">Frequently asked</h2>
+          </header>
+          <div class="mgf-website-faq" data-field="items">
+            <div class="mgf-faq-item">
+              <p class="mgf-faq-q" data-field="q">Question one?</p>
+              <p class="mgf-faq-a" data-field="a">Answer one.</p>
+            </div>
+            <div class="mgf-faq-item">
+              <p class="mgf-faq-q" data-field="q">Question two?</p>
+              <p class="mgf-faq-a" data-field="a">Answer two.</p>
+            </div>
+            <div class="mgf-faq-item">
+              <p class="mgf-faq-q" data-field="q">Question three?</p>
+              <p class="mgf-faq-a" data-field="a">Answer three.</p>
+            </div>
+          </div>
+        </section>
+        HTML;
+    }
+
+    private function slideWebsiteCta(): string
+    {
+        return <<<'HTML'
+        <!--
+          Component: website-cta (closing call-to-action band)
+          Fields: eyebrow, title, body, cta, cta_url
+          Layout: centered band on accent-soft background with primary CTA
+        -->
+        <section class="mgf-website-section mgf-bg-accent-soft" id="cta">
+          <div class="mgf-website-cta">
+            <p class="mgf-eyebrow" data-field="eyebrow">Ready when you are</p>
+            <h2 class="mgf-website-cta-title" data-field="title">Stop juggling tools.</h2>
+            <p class="mgf-website-cta-body" data-field="body">One short paragraph framing the offer — max 18 words.</p>
+            <a class="mgf-cta-solid mgf-cta-lg mgf-mt-lg" href="#" data-field="cta_url" data-label-field="cta">Primary CTA</a>
+          </div>
+        </section>
+        HTML;
+    }
+
+    private function slideWebsiteContact(): string
+    {
+        return <<<'HTML'
+        <!--
+          Component: website-contact (final section — email, phone, address)
+          Fields: title, subtitle, email, phone, address
+          Layout: 3-up contact card row
+        -->
+        <section class="mgf-website-section" id="contact">
+          <header class="mgf-website-section-header">
+            <p class="mgf-eyebrow">Contact</p>
+            <h2 class="mgf-website-section-title" data-field="title">Talk to us</h2>
+            <p class="mgf-website-section-sub" data-field="subtitle">One short line, max 18 words.</p>
+          </header>
+          <div class="mgf-grid-3 mgf-mt-lg">
+            <div class="mgf-card mgf-text-center">
+              <p class="mgf-card-label">Email</p>
+              <p class="mgf-body mgf-mt-sm" data-field="email">hello@acme.io</p>
+            </div>
+            <div class="mgf-card mgf-text-center">
+              <p class="mgf-card-label">Phone</p>
+              <p class="mgf-body mgf-mt-sm" data-field="phone">+1 (415) 555-0142</p>
+            </div>
+            <div class="mgf-card mgf-text-center">
+              <p class="mgf-card-label">Address</p>
+              <p class="mgf-body mgf-mt-sm" data-field="address">548 Market St, San Francisco, CA</p>
+            </div>
+          </div>
         </section>
         HTML;
     }
