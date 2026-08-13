@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    'anthropic' => [
+        // Per-request config — API key and base URL come from each
+        // user's UserAiProvider row, not from env. Only the API protocol
+        // version and HTTP timeout live here because they don't vary per
+        // user and don't change at runtime.
+        'api_version' => env('ANTHROPIC_API_VERSION', '2023-06-01'),
+        'timeout' => (int) env('ANTHROPIC_TIMEOUT', 60),
+    ],
+
 ];

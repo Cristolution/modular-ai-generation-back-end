@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AiJobController;
 use App\Http\Controllers\AiProviderController;
+use App\Http\Controllers\Api\V1\AiChatController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\ExportController;
@@ -28,6 +29,11 @@ Route::prefix('v1')->group(function () {
         Route::put('/me/ai-providers/{provider_id}', [AiProviderController::class, 'update']);
         Route::delete('/me/ai-providers/{provider_id}', [AiProviderController::class, 'destroy']);
         Route::post('/me/ai-providers/{provider_id}/test', [AiProviderController::class, 'test']);
+    });
+
+    // AI Chat (protected) — server-held Anthropic key, SSE passthrough
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/ai/chat', [AiChatController::class, 'chat']);
     });
 
     // Types (public)

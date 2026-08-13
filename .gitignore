@@ -33,6 +33,5 @@ composer.phar
 /.vagrant
 
 .claude/
-00_docs/
 01_diagrams/
 CLUADE.md
