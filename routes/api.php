@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminResourceController;
+use App\Http\Controllers\Admin\AdminTemplateController;
+use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\AiJobController;
 use App\Http\Controllers\AiProviderController;
 use App\Http\Controllers\Api\V1\AiChatController;
@@ -125,5 +128,18 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::put('/comments/{comment_id}', [CommentController::class, 'update']);
         Route::delete('/comments/{comment_id}', [CommentController::class, 'destroy']);
+    });
+
+    // Admin (admin role required) — middleware order matters: auth:sanctum
+    // first so $request->user() is populated, then the admin guard.
+    Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+        // List all users + keyword search, paginated.
+        Route::get('/admin/users', [AdminUserController::class, 'index']);
+        // Update a single user's role.
+        Route::put('/admin/users/{user_id}', [AdminUserController::class, 'updateRole']);
+        // List every template (incl. private/unlisted) for moderation.
+        Route::get('/admin/templates', [AdminTemplateController::class, 'index']);
+        // List every community resource (incl. private/unlisted).
+        Route::get('/admin/resources', [AdminResourceController::class, 'index']);
     });
 });

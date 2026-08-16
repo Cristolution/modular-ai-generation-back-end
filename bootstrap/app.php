@@ -26,6 +26,14 @@ return Application::configure(basePath: dirname(__DIR__))
 
             return null;
         });
+
+        // Route alias for admin-only endpoints. Always run AFTER auth:sanctum
+        // so $request->user() is the authenticated user. Non-admin users
+        // (including guest tokens) get a clean 403 JSON response — never
+        // let an unauthorized caller reach the controller body.
+        $middleware->alias([
+            'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Render AuthenticationException as JSON for API consumers regardless
