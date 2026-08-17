@@ -414,6 +414,62 @@ class ProjectSeeder extends BaseSeeder
         $rp($analyst,  $analystProjects);
         $rp($consumer, $consumerProjects);
 
+        // ── Bundle projects — one fork per bundle template ────────
+        // The bundle templates were just created in TemplateSeeder.
+        // We add ONE clone per bundle so the gallery has a complete
+        // fork graph without doubling the seeded project count with
+        // "(Draft N)" variants — the design system is best evaluated
+        // when each bundle renders once, not five half-clones.
+        $bundleTemplateNames = [
+            'mgf-deck'          => 'Crist — One Vocabulary',
+            'mgf-components'    => 'Crist — Cards in Every Flavor',
+            'anti-ai-studio'    => 'Crist — Anti-AI Studio',
+            'mgf-rtl'           => 'MGF — ملف واحد، كل العلامات',
+            'mgf-showcase'      => 'Crist — Diagrams → Static SVG',
+            'mgf-themes'        => 'Crist — Theme Gallery',
+            'mgf-website'       => 'Crist — MGF Studio Site',
+            'summary-archetype' => 'Crist — Q1 2026 Summary',
+        ];
+
+        // User pool — each bundle project goes to a user OTHER than
+        // its template's author so the fork graph has real edges.
+        $bundleUserPool = [$projects, $studio, $analyst, $consumer];
+
+        $bundleUserIndex = 0;
+        foreach ($bundleTemplateNames as $bundle => $templateName) {
+            $template = $templates->firstWhere('name', $templateName);
+
+            if ($template === null) {
+                continue;
+            }
+
+            // Cycle through the pool, skipping the template's author.
+            do {
+                $owner = $bundleUserPool[$bundleUserIndex % count($bundleUserPool)];
+                $bundleUserIndex++;
+            } while ($owner->id === $template->user_id && $bundleUserIndex < count($bundleUserPool) * 2);
+
+            $type = $types->where('name', $template->type?->name ?? 'presentation')->first()
+                ?? $types->where('name', 'presentation')->first();
+
+            $project = Project::factory()->create([
+                'user_id'     => $owner->id,
+                'template_id' => $template->id,
+                'type_id'     => $type->id,
+                'name'        => $template->name,
+                'description' => $template->description,
+                'status'      => 'published',
+                'visibility'  => 'public',
+                'tags'        => $template->tags ?? [],
+                'locale'      => $template->locale ?? 'en',
+                'direction'   => $template->direction ?? 'ltr',
+                'cloned_at'   => now(),
+            ]);
+
+            $files = $this->bundleFiles($bundle);
+            $this->persistFilesOnProject($project, $owner, $files);
+        }
+
         // A handful of generic factory-built drafts so each user has
         // empty/scratch surfaces to experiment with.
         Project::factory(2)->create([

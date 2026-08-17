@@ -125,6 +125,100 @@ trait MgfFileBuilders
         ];
     }
 
+    /**
+     * Read a pre-extracted MGF seed bundle from disk and emit one file
+     * row per layer. The bundles live under
+     * `mgf_test_lab/to be seeded/output to be seeded sturcted as the
+     * porject wants of spereated layers/<bundleName>/` — one
+     * subdirectory per FileLayer value.
+     *
+     * Bundle shape (every value below is optional):
+     *   content/data.json      → project meta + slides[] (decks) or site{} (websites)
+     *   context/context.md     → human brief
+     *   layout/layout.css      → token block (decks)
+     *   layout/layout.html     → website body wrapper (websites only)
+     *   meta/meta.md           → informational table (not rendered)
+     *   rules/rules.md         → house rules stub
+     *   slide/slide-NN-*.html  → individual slide HTML (decks only)
+     *   style/style.css        → full extracted <style> block
+     *   style/theme.css        → all `:root { … }` token blocks
+     *
+     * Iteration order: meta → context → rules → style → layout →
+     * content → slide(s), with slides re-sorted by their NN prefix.
+     *
+     * The bundle content is emitted AS-IS — token prefixes (`--c-bg`,
+     * `--fs-base`, …) are not normalized to the `--mgf-*` family the
+     * hand-written archetypes use, because the bundles are the
+     * canonical reference HTML extracted from the design system.
+     */
+    protected function bundleFiles(string $bundleName): array
+    {
+        $root = realpath(__DIR__ . '/../../../../mgf_test_lab/to be seeded/output to be seeded sturcted as the porject wants of spereated layers');
+
+        if ($root === false) {
+            throw new \RuntimeException(
+                'Seed bundle root not found. Expected at '
+                . '<project>/mgf_test_lab/to be seeded/output to be seeded '
+                . 'sturcted as the porject wants of spereated layers/'
+            );
+        }
+
+        $bundleDir = $root . DIRECTORY_SEPARATOR . $bundleName;
+
+        if (! is_dir($bundleDir)) {
+            throw new \RuntimeException("Bundle directory not found: {$bundleDir}");
+        }
+
+        $files = [];
+
+        foreach (['meta', 'context', 'rules', 'style', 'layout', 'content', 'slide'] as $layer) {
+            $layerDir = $bundleDir . DIRECTORY_SEPARATOR . $layer;
+
+            if (! is_dir($layerDir)) {
+                continue;
+            }
+
+            $entries = scandir($layerDir) ?: [];
+            sort($entries, SORT_NATURAL);
+            foreach ($entries as $entry) {
+                if ($entry === '.' || $entry === '..') {
+                    continue;
+                }
+
+                $path = $layerDir . DIRECTORY_SEPARATOR . $entry;
+                if (! is_file($path)) {
+                    continue;
+                }
+
+                $files[] = [
+                    'layer'     => $layer,
+                    'name'      => $entry,
+                    'extension' => pathinfo($entry, PATHINFO_EXTENSION),
+                    'content'   => file_get_contents($path),
+                ];
+            }
+        }
+
+        // Keep slides ordered by their NN prefix; everything else keeps
+        // the layer-walk order above.
+        $nonSlides = array_values(array_filter(
+            $files,
+            fn (array $f): bool => $f['layer'] !== 'slide'
+        ));
+        $slides    = array_values(array_filter(
+            $files,
+            fn (array $f): bool => $f['layer'] === 'slide'
+        ));
+        usort($slides, function (array $a, array $b): int {
+            preg_match('/^slide-(\d+)-/', $a['name'], $ma);
+            preg_match('/^slide-(\d+)-/', $b['name'], $mb);
+
+            return ((int) ($ma[1] ?? 0)) <=> ((int) ($mb[1] ?? 0));
+        });
+
+        return array_merge($nonSlides, $slides);
+    }
+
     /** Persist the file array against a project. */
     protected function persistFilesOnProject(\App\Models\Project $project, User $user, array $files): void
     {

@@ -349,6 +349,69 @@ class TemplateSeeder extends BaseSeeder
         $ru($analyst,  $analystTemplates);
         $ru($consumer, $consumerTemplates);
 
+        // ── Bundle templates — real extracted MGF seed bundles ───
+        // Each entry loads its meta + context + rules + style + layout
+        // + content + slide files from
+        // `mgf_test_lab/to be seeded/.../<bundleName>/` on disk. Styles
+        // and tokens are emitted AS-IS — these are the canonical
+        // reference HTML from the design system, not synthetic copies.
+        $bundleMap = [
+            'author'   => ['mgf-deck', 'mgf-components'],
+            'studio'   => ['anti-ai-studio', 'mgf-rtl'],
+            'analyst'  => ['mgf-showcase', 'mgf-themes'],
+            'consumer' => ['mgf-website', 'summary-archetype'],
+        ];
+
+        $bundleMeta = [
+            'mgf-deck'         => ['Crist — One Vocabulary',          'One vocabulary. Every surface.',         'showcase-deck',          ['brutalist', 'showcase', 'design-system', 'deck']],
+            'mgf-components'   => ['Crist — Cards in Every Flavor',   'Cards in every flavor.',                  'showcase-deck',          ['components', 'cards', 'specimen', 'showcase']],
+            'anti-ai-studio'   => ['Crist — Anti-AI Studio',          'Made by a human. On purpose.',            'single-page-website',    ['portfolio', 'website', 'design', 'anti-ai']],
+            'mgf-rtl'          => ['MGF — ملف واحد، كل العلامات',     'إم جي إف — ملف واحد، كل العلامات',         'single-page-website-rtl',['website', 'arabic', 'rtl', 'studio']],
+            'mgf-showcase'     => ['Crist — Diagrams → Static SVG',   'Diagrams → static SVG at build time.',     'showcase-deck',          ['diagrams', 'svg', 'showcase', 'deck']],
+            'mgf-themes'       => ['Crist — Theme Gallery',           'Theme Gallery — Foundations.',             'theme-gallery',          ['themes', 'palette', 'gallery', 'design-system']],
+            'mgf-website'      => ['Crist — MGF Studio Site',         'MGF — One vocabulary, every brand.',       'single-page-website',    ['marketing', 'website', 'design-system']],
+            'summary-archetype'=> ['Crist — Q1 2026 Summary',         'Q1 2026 summary.',                         'presentation-deck',      ['summary', 'quarterly', 'deck']],
+        ];
+
+        $bundlesByRole = [
+            'author'   => $author,
+            'studio'   => $studio,
+            'analyst'  => $analyst,
+            'consumer' => $consumer,
+        ];
+
+        foreach ($bundleMap as $role => $bundles) {
+            $bundleOwner = $bundlesByRole[$role];
+            $type = $types->where('name', 'presentation')->first();
+
+            foreach ($bundles as $bundle) {
+                $meta = $bundleMeta[$bundle];
+
+                // Pick a Type by archetype. Websites → 'website',
+                // everything else → 'presentation'.
+                $bundleType = str_contains($meta[2], 'website')
+                    ? ($types->where('name', 'website')->first() ?? $type)
+                    : $type;
+
+                $template = Template::factory()->create([
+                    'name'          => $meta[0],
+                    'description'   => $meta[1],
+                    'thumbnail_url' => 'https://picsum.photos/seed/' . $bundle . '/400/300',
+                    'visibility'    => 'public',
+                    'tags'          => $meta[3],
+                    'locale'        => 'en',
+                    'direction'     => 'ltr',
+                    'user_id'       => $bundleOwner->id,
+                    'type_id'       => $bundleType->id,
+                    'fork_count'    => rand(0, 20),
+                    'upvote_count'  => rand(0, 50),
+                ]);
+
+                $files = $this->bundleFiles($bundle);
+                $this->persistFilesOnTemplate($template, $bundleOwner, $files);
+            }
+        }
+
         // A handful of generic factory-built public templates for
         // gallery variety. Distribute 1-2 across each user so the
         // factory noise doesn't all stack on one author.
