@@ -27,6 +27,24 @@ class FileResource extends JsonResource
 
     private function shouldLoadContent(Request $request): bool
     {
-        return $request->user() && ($request->user()->id === $this->user_id || in_array($request->user()->role, ['admin', 'superadmin']));
+        $user = $request->user();
+
+        // Owner and admins always see content.
+        if ($user && ($user->id === $this->user_id || in_array($user->role, ['admin', 'superadmin']))) {
+            return true;
+        }
+
+        // Template files inherit the template's visibility — a public template
+        // is meant to be previewed by anyone, so its content must be returned
+        // to allowed viewers. (The caller has already passed Gate::authorize
+        // 'view' on the parent template, so privacy is enforced upstream.)
+        if ($this->template_id) {
+            $template = $this->relationLoaded('template') ? $this->template : null;
+            if ($template && $template->visibility === 'public') {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -99,6 +99,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/users/{user_id}', [UserController::class, 'show']);
     Route::get('/users/{user_id}/templates', [UserController::class, 'templates']);
     Route::get('/users/{user_id}/resources', [UserController::class, 'resources']);
+    Route::get('/users/{user_id}/projects', [UserController::class, 'projects']);
 
     // Users (protected)
     Route::middleware('auth:sanctum')->group(function () {

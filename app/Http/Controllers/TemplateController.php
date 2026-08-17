@@ -140,7 +140,14 @@ class TemplateController extends Controller
 
         Gate::authorize('view', $template);
 
-        $files = $template->files()->orderBy('sort_order')->get();
+        // Only return the template's source files (`project_id` null). Forked
+        // projects copy every file with the original `template_id` set, so an
+        // unfiltered relation would return duplicates from each fork.
+        $files = $template->files()
+            ->whereNull('project_id')
+            ->with('template')
+            ->orderBy('sort_order')
+            ->get();
 
         return FileResource::collection($files);
     }

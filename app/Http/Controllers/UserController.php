@@ -9,6 +9,7 @@ use App\Http\Resources\TemplateResource;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Hash;
 
@@ -82,5 +83,21 @@ class UserController extends Controller
             ->paginate(20);
 
         return ResourceResource::collection($resources);
+    }
+
+    public function projects(Request $request, string $userId): AnonymousResourceCollection
+    {
+        $user = User::findOrFail($userId);
+
+        // Owners see every project (including private drafts); everyone else
+        // sees only projects the user has marked public.
+        $query = $user->projects()->with('type');
+        $isOwner = $request->user() && $request->user()->id === $user->id;
+        if (!$isOwner) {
+            $query->where('visibility', 'public');
+        }
+        $projects = $query->orderBy('created_at', 'desc')->paginate(20);
+
+        return \App\Http\Resources\ProjectResource::collection($projects);
     }
 }
