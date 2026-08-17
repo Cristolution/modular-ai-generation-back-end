@@ -37,6 +37,15 @@ class AiChatController extends Controller
      */
     public function chat(Request $request): StreamedResponse|JsonResponse
     {
+        // The full-project generation task can take 60–90 seconds to
+        // stream end-to-end (style.css + layout.css + 5+ slide-NN.html +
+        // data.json). PHP's default 30s `max_execution_time` kills the
+        // stream mid-JSON, leaving the frontend with a truncated reply
+        // and a "not parseable as a JSON object" error. Extend the
+        // budget for this endpoint only — the regular editor modals
+        // (single-file regeneration) still finish well inside 30s.
+        set_time_limit(180);
+
         $validated = $request->validate([
             'provider_id' => ['required', 'string', 'uuid'],
             'model' => ['nullable', 'string', 'min:1', 'max:128'],
@@ -44,7 +53,16 @@ class AiChatController extends Controller
             'messages.*.role' => ['required', 'string', 'in:user,assistant'],
             'messages.*.content' => ['required', 'string'],
             'system' => ['nullable', 'string', 'max:100000'],
-            'max_tokens' => ['nullable', 'integer', 'min:1', 'max:8192'],
+            // The "Generate full project" page needs the AI to emit
+            // style.css + layout.css + every slide-NN.html + data.json +
+            // _meta in a single reply — typically 25–35 KB of JSON
+            // (~8–10 K tokens). The previous cap of 8192 cut the
+            // stream mid-JSON after just style.css + part of the
+            // layout, leaving the parser with "not parseable as a
+            // JSON object". 16384 covers a 5–10 slide deck; single-file
+            // regeneration tasks (editor modals) still default to 4096
+            // on the frontend and never hit this ceiling.
+            'max_tokens' => ['nullable', 'integer', 'min:1', 'max:16384'],
         ]);
 
         // Scoped lookup — `findOrFail` on the user's relation ensures user
