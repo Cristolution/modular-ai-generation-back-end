@@ -18,7 +18,12 @@ use Illuminate\Support\Facades\Hash;
  *   joudy@example.com    (Joudy)
  *   sally@example.com    (Sally)
  *
- * All use the password `password` and the regular `user` role.
+ * All use the password `password` and the `admin` role, so the deployed
+ * dev environment can be exercised by every teammate with full access to
+ * `/api/v1/admin/*` (user moderation, role updates, full template + resource
+ * listings) without sharing `admin@example.com`. Mirrors the
+ * `AdminSeeder` promote-if-needed pattern so re-seeding restores admin
+ * even if a row pre-existed with `role='user'`.
  *
  * Each user is given a single MGF provider row whose base_url + model match
  * the existing `projects@example.com` setup, but with `api_key_encrypted`
@@ -58,9 +63,16 @@ class TeamSeeder extends BaseSeeder
             [
                 'name'          => $name,
                 'password_hash' => Hash::make('password'),
-                'role'          => 'user',
+                'role'          => 'admin',
             ]
         );
+
+        // Promote to admin if the row pre-existed with role='user' (e.g.
+        // after a partial seed, a previous TeamSeeder run that used
+        // role='user', or a manual demotion). Same shape as AdminSeeder.
+        if ($user->role !== 'admin') {
+            $user->update(['role' => 'admin']);
+        }
 
         UserProfile::firstOrCreate(['user_id' => $user->id]);
 
