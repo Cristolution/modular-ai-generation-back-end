@@ -456,6 +456,14 @@ class ProjectSeeder extends BaseSeeder
                 'user_id'     => $owner->id,
                 'template_id' => $template->id,
                 'type_id'     => $type->id,
+                // Snapshot the template name at clone time so the snapshot
+                // survives a later template rename or delete (FK is
+                // onDelete('set null')). The other 41 hand-built projects
+                // and the 5 generic drafts intentionally stay null because
+                // they are direct creations, not real clones of any one
+                // specific template — see ERD.db:87 for the column's design
+                // intent ("snapshot of template name at clone time").
+                'origin_template_name' => $template->name,
                 'name'        => $template->name,
                 'description' => $template->description,
                 'status'      => 'published',
