@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             TypeSeeder::class,
             UserSeeder::class,
             UserAiProviderSeeder::class,
+            TeamSeeder::class,
             AdminSeeder::class,
             TemplateSeeder::class,
             ProjectSeeder::class,
