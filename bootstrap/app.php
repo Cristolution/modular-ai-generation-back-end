@@ -33,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // let an unauthorized caller reach the controller body.
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
+            'team.daily' => \App\Http\Middleware\TeamUserDailyLimit::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -34,8 +34,11 @@ Route::prefix('v1')->group(function () {
         Route::post('/me/ai-providers/{provider_id}/test', [AiProviderController::class, 'test']);
     });
 
-    // AI Chat (protected) — server-held Anthropic key, SSE passthrough
-    Route::middleware('auth:sanctum')->group(function () {
+    // AI Chat (protected) — server-held Anthropic key, SSE passthrough.
+    // The team.daily cap is a no-op for non-team users; the six
+    // TeamSeeder accounts share the same MGF key post-deploy, so a
+    // runaway loop on the frontend could drain the daily budget.
+    Route::middleware(['auth:sanctum', 'team.daily:10'])->group(function () {
         Route::post('/ai/chat', [AiChatController::class, 'chat']);
     });
 
@@ -78,8 +81,12 @@ Route::prefix('v1')->group(function () {
         Route::delete('/projects/{project_id}/files/{file_id}', [ProjectController::class, 'destroyFile']);
         Route::patch('/projects/{project_id}/files/reorder', [ProjectController::class, 'reorderFiles']);
         Route::get('/projects/{project_id}/jobs', [AiJobController::class, 'index']);
-        Route::post('/projects/{project_id}/generate', [AiJobController::class, 'generateFull']);
-        Route::post('/projects/{project_id}/files/{file_id}/generate', [AiJobController::class, 'generateLayer']);
+        // The two generate routes also call the upstream AI API (via the
+        // AiJob pipeline), so they get the same per-team-user daily cap.
+        Route::middleware('team.daily:10')->group(function () {
+            Route::post('/projects/{project_id}/generate', [AiJobController::class, 'generateFull']);
+            Route::post('/projects/{project_id}/files/{file_id}/generate', [AiJobController::class, 'generateLayer']);
+        });
     });
 
     // Jobs poll (protected)
