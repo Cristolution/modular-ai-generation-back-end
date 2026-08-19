@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             TeamSeeder::class,
             AdminSeeder::class,
             TemplateSeeder::class,
+            KonkretTemplateSeeder::class,
             ProjectSeeder::class,
             FileSeeder::class,
             AiJobSeeder::class,
