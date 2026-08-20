@@ -10,7 +10,14 @@ use Illuminate\Support\Facades\Hash;
 
 /**
  * Imports the 18 KONKRET launch-deck variants at
- * `C:/Users/Crist/Desktop/ttt/konkret-*` as canonical MGF templates.
+ * `KONKRET_SOURCE_ROOT/konkret-*` as canonical MGF templates.
+ *
+ * On a developer machine this resolves to the local working folder
+ * (`C:/Users/Crist/Desktop/ttt`). On a VPS / CI / production seed,
+ * set `KONKRET_SOURCE_ROOT` in `.env` to the path where the
+ * `konkret-*` folders are checked out, or leave it unset to skip
+ * the seeder entirely (the seed run completes without the 18
+ * gallery templates).
  *
  * Each source folder ships a flat file set:
  *   data.json        — flat per-slide fields (no _meta, no nested `data:{}`)
@@ -52,8 +59,13 @@ class KonkretTemplateSeeder extends BaseSeeder
      * Absolute path on the host to the directory containing the 18
      * `konkret-*` source folders. Lives outside the project tree by
      * design — these are working files, not bundled assets.
+     *
+     * On a developer machine this points at the local working folder.
+     * On a VPS / CI / production seed, set `KONKRET_SOURCE_ROOT` in
+     * the .env to the path where the konkret-* folders are checked
+     * out (or leave it unset to skip this seeder entirely).
      */
-    private string $sourceRoot = 'C:/Users/Crist/Desktop/ttt';
+    private string $sourceRoot;
 
     /**
      * Canonical 5-component skeleton shared by every konkret variant.
@@ -62,6 +74,43 @@ class KonkretTemplateSeeder extends BaseSeeder
      * konkret project reuses the same five slide shapes.
      */
     private array $componentSkeleton = ['cover', 'problem', 'features', 'stats', 'closing'];
+
+    /**
+     * Skip the seeder entirely when the KONKRET source folder is not
+     * present on the host. This is the VPS / CI / production path —
+     * those environments don't carry the working files at
+     * `C:/Users/Crist/Desktop/ttt`, so we degrade gracefully instead
+     * of crashing `db:seed`. On a developer machine the override
+     * `KONKRET_SOURCE_ROOT` is set in .env (or the env var is unset
+     * and the local default is used).
+     */
+    protected function shouldSeed(): bool
+    {
+        $envPath = env('KONKRET_SOURCE_ROOT');
+
+        if ($envPath === null || $envPath === '') {
+            // Unset → fall back to the developer-machine default. If
+            // that folder isn't there either, the existence check
+            // below catches it and the seeder skips cleanly.
+            $resolved = 'C:/Users/Crist/Desktop/ttt';
+        } else {
+            $resolved = $envPath;
+        }
+
+        $this->sourceRoot = rtrim($resolved, '/\\');
+
+        if (! is_dir($this->sourceRoot)) {
+            $this->command?->warn(
+                "[KonkretTemplateSeeder] Skipping: source folder not found at "
+                . "\"{$this->sourceRoot}\". Set KONKRET_SOURCE_ROOT in .env "
+                . "to enable, or leave it unset on environments where the "
+                . "KONKRET launch-deck assets aren't deployed."
+            );
+            return false;
+        }
+
+        return true;
+    }
 
     protected function seed(): void
     {
@@ -132,8 +181,9 @@ class KonkretTemplateSeeder extends BaseSeeder
 
         if (! is_dir($folder)) {
             throw new \RuntimeException(
-                "Konkret source folder missing: {$folder}. The KONKRET "
-                . "lab directory is expected at C:/Users/Crist/Desktop/ttt/"
+                "Konkret source folder missing: {$folder}. Set "
+                . "KONKRET_SOURCE_ROOT in .env to the directory that "
+                . "contains the konkret-* source folders."
             );
         }
 
