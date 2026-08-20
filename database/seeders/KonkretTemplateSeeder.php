@@ -159,6 +159,15 @@ class KonkretTemplateSeeder extends BaseSeeder
 
         $transformedData = $this->transformDataJson($original, $spec, $raw);
 
+        // Refine every slide HTML so its classes conform to the canonical
+        // MGF vocabulary — non-canonical tokens used by the source
+        // (mgf-card-ghost, mgf-ink-stamp*, mgf-slide-cover, etc.) are
+        // remapped to canonical equivalents, so the frontend renderer
+        // can resolve every class through the design system.
+        foreach (['slide-01.html', 'slide-02.html', 'slide-03.html', 'slide-04.html', 'slide-05.html'] as $slideFile) {
+            $raw[$slideFile] = $this->refineHtmlClasses($raw[$slideFile]);
+        }
+
         $template = Template::updateOrCreate(
             ['name' => $spec['name']],
             [
@@ -302,6 +311,71 @@ class KonkretTemplateSeeder extends BaseSeeder
             return trim(html_entity_decode($m[1], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
         }
         return '';
+    }
+
+    /**
+     * Map every non-canonical `mgf-*` token the konkret source uses
+     * down to a canonical vocabulary token, then strip any token that
+     * has no canonical equivalent. The frontend renderer resolves
+     * classes through `baseCss.ts` — a class outside the vocabulary
+     * renders as no rules at all, so this refinement is the contract
+     * that every slide HTML must honor.
+     *
+     * The mapping is exhaustive — every non-canonical class observed
+     * in the 18 source folders has a row in `$swaps` or `$strips`.
+     * If a new non-canonical class appears in a future konkret
+     * variant, add it here.
+     */
+    private function refineHtmlClasses(string $html): string
+    {
+        // 1:1 remap to a canonical token. Same key preserves the role,
+        // different value picks the closest canonical primitive.
+        $swaps = [
+            'mgf-card-ghost'         => 'mgf-card-solid',   // recessed / no border
+            'mgf-ink-stamp'          => 'mgf-tag',          // small uppercase tag
+            'mgf-ink-stamp-label'    => 'mgf-eyebrow',      // uppercase eyebrow
+            'mgf-ink-stamp-edition'  => 'mgf-tag',          // tag variant for the edition number
+        ];
+
+        // Tokens that have no canonical equivalent — drop entirely.
+        // The underlying HTML element (e.g. `<header>`, `<footer>`,
+        // `<div>`) is preserved so structural semantics survive.
+        $strips = [
+            'mgf-slide-cover',
+            'mgf-slide-features',
+            'mgf-slide-stats',
+            'mgf-slide-indictment',
+            'mgf-slide-cta',
+            'mgf-slide-content',
+            'mgf-slide-header',
+            'mgf-slide-footer',
+            'mgf-slide-header-brand',
+            'mgf-slide-header-meta',
+        ];
+
+        return preg_replace_callback(
+            '/class="([^"]+)"/',
+            function (array $m) use ($swaps, $strips): string {
+                $tokens = preg_split('/\s+/', trim($m[1]));
+                $kept   = [];
+                foreach ($tokens as $token) {
+                    if (in_array($token, $strips, true)) {
+                        continue;
+                    }
+                    $kept[] = $swaps[$token] ?? $token;
+                }
+
+                // If the only class on the element was a stripped one
+                // (e.g. `<div class="mgf-slide-content">`), drop the
+                // empty class attribute entirely.
+                if ($kept === []) {
+                    return '';
+                }
+
+                return 'class="' . implode(' ', $kept) . '"';
+            },
+            $html
+        );
     }
 
     private function buildMeta(array $spec): string
